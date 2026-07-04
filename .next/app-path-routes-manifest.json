@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/robots.txt/route": "/robots.txt",
+  "/sitemap.xml/route": "/sitemap.xml",
+  "/(marketing)/page": "/",
+  "/(marketing)/agency/page": "/agency",
+  "/(marketing)/product/page": "/product",
+  "/(marketing)/pricing/page": "/pricing"
+}
