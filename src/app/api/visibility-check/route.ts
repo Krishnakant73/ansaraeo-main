@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     const summary = results.map((r, i) => {
       const engineName = engines?.[i]?.name ?? "unknown";
       return r.status === "fulfilled"
-        ? { engine: engineName, success: true, ...r.value }
+        ? { ...r.value, engine: engineName, success: true }
         : { engine: engineName, success: false, error: (r.reason as Error).message };
     });
 
