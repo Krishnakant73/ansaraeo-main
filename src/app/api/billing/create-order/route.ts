@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { razorpay, PLAN_PRICING } from "@/lib/razorpay";
+import { getRazorpay, PLAN_PRICING } from "@/lib/razorpay";
 
 // ============================================================
 // POST /api/billing/create-order
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   const amountInr = PLAN_PRICING[plan][cycle as "monthly" | "yearly"];
   const amountPaise = amountInr * 100; // Razorpay works in the smallest currency unit (paise)
 
-  const order = await razorpay.orders.create({
+  const order = await getRazorpay().orders.create({
     amount: amountPaise,
     currency: "INR",
     receipt: `${membership.org_id}_${Date.now()}`,
