@@ -43,6 +43,10 @@ pnpm-debug.log*
 supabase/.temp/
 supabase/.branches/
 
+# Docs & planning files (keep README)
+*.md
+!README.md
+
 # Misc
 *.pem
 .turbo
