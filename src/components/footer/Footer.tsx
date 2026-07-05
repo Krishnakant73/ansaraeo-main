@@ -15,10 +15,10 @@ const COLS = [
   {
     title: "Resources",
     links: [
-      { label: "Blog", href: "/resources" },
-      { label: "AEO Guide", href: "/resources" },
-      { label: "Docs", href: "/resources" },
-      { label: "Changelog", href: "/resources" },
+      { label: "Blog", href: "/resources/blog" },
+      { label: "AEO Guide", href: "/resources/guide" },
+      { label: "Docs", href: "/resources/docs" },
+      { label: "Changelog", href: "/resources/changelog" },
     ],
   },
   {
@@ -39,11 +39,14 @@ const COLS = [
   },
 ];
 
+// Founder's personal LinkedIn — this is the first-party distribution channel
+// while AnsarAEO is a solo/early-stage build. Swap to a company LinkedIn
+// page URL later once you register the company (see Part 6 GTM plan).
 const SOCIALS = [
-  { icon: Twitter, label: "Twitter" },
-  { icon: Linkedin, label: "LinkedIn" },
-  { icon: Youtube, label: "YouTube" },
-  { icon: Instagram, label: "Instagram" },
+  { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/krishnakantrajbhar/" },
+  { icon: Twitter, label: "Twitter", href: "#" },
+  { icon: Youtube, label: "YouTube", href: "#" },
+  { icon: Instagram, label: "Instagram", href: "#" },
 ];
 
 export default function Footer() {
@@ -65,7 +68,9 @@ export default function Footer() {
             {SOCIALS.map((s) => (
               <a
                 key={s.label}
-                href="#"
+                href={s.href}
+                target={s.href.startsWith("http") ? "_blank" : undefined}
+                rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
                 aria-label={s.label}
                 className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/60 transition-colors hover:border-accent hover:text-accent"
               >

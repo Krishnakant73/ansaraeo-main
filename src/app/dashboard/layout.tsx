@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BarChart3, Bot, FileSearch, Home, MessageSquare, Settings } from "lucide-react";
+import { BarChart3, Bot, FileSearch, Home, MessageSquare, Settings, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -8,9 +8,10 @@ const NAV = [
   { icon: Home, label: "Dashboard", href: "/dashboard" },
   { icon: MessageSquare, label: "Prompts", href: "/dashboard/prompts" },
   { icon: FileSearch, label: "Citations", href: "/dashboard/citations" },
+  { icon: ShieldCheck, label: "Site Audit", href: "/dashboard/site-audit" },
   { icon: Bot, label: "Agent", href: "/dashboard/agent" },
   { icon: BarChart3, label: "Reports", href: "/dashboard/reports" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  { icon: Settings, label: "Settings", href: "/dashboard/settings/billing" },
 ];
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -19,8 +20,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Belt-and-braces check — middleware.ts already redirects unauthenticated
-  // users, but Server Components should never assume that ran.
   if (!user) redirect("/login");
 
   return (
