@@ -24,18 +24,17 @@ const COLS = [
   {
     title: "Company",
     links: [
-      { label: "About", href: "/#footer" },
-      { label: "Careers", href: "/#footer" },
-      { label: "Contact", href: "/#footer" },
+      { label: "About", href: "/about" },
+      { label: "Contact", href: "/contact" },
+      { label: "Careers", href: "/about" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Terms", href: "/terms" },
-      { label: "Privacy", href: "/terms" },
-      { label: "Security", href: "/terms" },
-      { label: "Refunds", href: "/terms" },
+      { label: "Terms & Conditions", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Refund Policy", href: "/refund-policy" },
     ],
   },
 ];
@@ -58,6 +57,9 @@ export default function Footer() {
           </Link>
           <p className="mt-4 text-sm leading-relaxed text-white/50">
             India-first AI search visibility. Built in India, priced in ₹.
+          </p>
+          <p className="mt-2 text-sm text-white/50">
+            <a href="mailto:admin@ansaraeo.com" className="hover:text-white">admin@ansaraeo.com</a>
           </p>
           <div className="mt-6 flex gap-3">
             {SOCIALS.map((s) => (

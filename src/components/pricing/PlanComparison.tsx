@@ -75,8 +75,8 @@ export default function PlanComparison() {
               </thead>
               <tbody>
                 {GROUPS.map((g) => (
-                  <>
-                    <tr key={g.cat} className="border-b border-line/60 bg-surface">
+                  <Fragment key={g.cat}>
+                    <tr className="border-b border-line/60 bg-surface">
                       <th colSpan={5} scope="colgroup" className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">
                         {g.cat}
                       </th>
@@ -91,7 +91,7 @@ export default function PlanComparison() {
                         ))}
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

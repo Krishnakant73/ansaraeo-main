@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import SmoothScroll from "@/components/layout/SmoothScroll";
+import CookieConsent from "@/components/shared/CookieConsent";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <SmoothScroll>{children}</SmoothScroll>
+        <CookieConsent />
       </body>
     </html>
   );
