@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { getInternalLLM } from "@/lib/llm";
 
 // ============================================================
 // AI Index Generator (Batch 25)
@@ -203,35 +204,12 @@ async function buildIntentPages(
     const intentList = intents
       .map((i) => `- ${i.label}${i.page.url ? ` (source: ${i.page.url})` : ""}`)
       .join("\n");
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write concise, source-backed 'AI Intent Pages' that tell AI answer engines when and why to recommend a brand. Be factual. Use [ADD ...] placeholders for owner-only facts you cannot know. Return JSON with a single key 'markdown' containing the full Markdown document.",
-          },
-          {
-            role: "user",
-            content: `Brand: ${orgName}\nIndustry: ${industry || "unknown"}\nKey intents / pages:\n${intentList}\n\nWrite the AI Intent Pages Markdown (include a 'Retrieval vocabulary note' section at the end pointing to the separate retrieval vocabulary list).`,
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `You write concise, source-backed 'AI Intent Pages' that tell AI answer engines when and why to recommend a brand. Be factual. Use [ADD ...] placeholders for owner-only facts you cannot know. Return JSON with a single key 'markdown' containing the full Markdown document.`,
+      prompt: `Brand: ${orgName}\nIndustry: ${industry || "unknown"}\nKey intents / pages:\n${intentList}\n\nWrite the AI Intent Pages Markdown (include a 'Retrieval vocabulary note' section at the end pointing to the separate retrieval vocabulary list).`,
+      json: true,
     });
-    if (!res.ok) {
-      notes.push("OpenAI intent-page draft failed — fell back to template with [ADD …] placeholders.");
-      return buildTemplatedIntentPages(orgName, industry, intents);
-    }
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content;
-    const parsed = typeof content === "string" ? JSON.parse(content) : null;
+    const parsed = JSON.parse(raw ?? "{}");
     const markdown = typeof parsed?.markdown === "string" ? parsed.markdown : null;
     if (!markdown) {
       notes.push("OpenAI returned no usable intent-page Markdown — fell back to template.");
@@ -292,28 +270,12 @@ async function draftMarkdownDoc(params: {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: params.systemPrompt },
-          { role: "user", content: params.userPrompt },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: params.systemPrompt,
+      prompt: params.userPrompt,
+      json: true,
     });
-    if (!res.ok) {
-      params.notes.push(`OpenAI ${params.fieldName} draft failed — fell back to template with [ADD …] placeholders.`);
-      return null;
-    }
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content;
-    const parsed = typeof content === "string" ? JSON.parse(content) : null;
+    const parsed = JSON.parse(raw ?? "{}");
     const markdown = typeof parsed?.markdown === "string" ? parsed.markdown : null;
     if (!markdown) {
       params.notes.push(`OpenAI returned no usable ${params.fieldName} Markdown — fell back to template.`);
@@ -500,36 +462,12 @@ async function buildAtomicFacts(
     );
   }
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You produce a JSON array of atomic Q/A facts for a brand that AI answer engines can cite verbatim. Each answer must be under 500 characters and self-contained. Use [ADD ...] placeholders for any fact you cannot know. Return JSON: { \"facts\": [{ \"question\": string, \"answer\": string }] }.",
-          },
-          {
-            role: "user",
-            content: `Brand: ${orgName}\nIndustry: ${industry || "unknown"}\nKnown pages:\n${pageHints}\n\nReturn 5-8 atomic facts an AI engine should be able to cite about this brand.`,
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `You produce a JSON array of atomic Q/A facts for a brand that AI answer engines can cite verbatim. Each answer must be under 500 characters and self-contained. Use [ADD ...] placeholders for any fact you cannot know. Return JSON: { "facts": [{ "question": string, "answer": string }] }.`,
+      prompt: `Brand: ${orgName}\nIndustry: ${industry || "unknown"}\nKnown pages:\n${pageHints}\n\nReturn 5-8 atomic facts an AI engine should be able to cite about this brand.`,
+      json: true,
     });
-    if (!res.ok) {
-      notes.push("OpenAI aeo.json draft failed — fell back to template with [ADD …] placeholders.");
-      return JSON.stringify(
-        [{ question: `What is ${orgName}?`, answer: `${orgName}${industry ? ` is a ${industry} company` : ""}. [ADD DESCRIPTION]` }],
-        null,
-        2
-      );
-    }
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content;
-    const parsed = typeof content === "string" ? JSON.parse(content) : null;
+    const parsed = JSON.parse(raw ?? "{}");
     const facts = Array.isArray(parsed?.facts) ? parsed.facts : null;
     if (!facts) {
       notes.push("OpenAI returned no usable aeo.json — fell back to template.");

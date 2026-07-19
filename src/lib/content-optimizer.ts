@@ -10,6 +10,7 @@
 // ============================================================
 
 import * as cheerio from "cheerio";
+import { getInternalLLM } from "@/lib/llm";
 
 export type OptimizerResult = {
   source: { url?: string; originalText: string; truncated: boolean };
@@ -167,34 +168,12 @@ ${originalText}
 Return JSON: { "before": { "geo": number, "aeo": number, "readability": number }, "after": { "geo": number, "aeo": number, "readability": number }, "reasoning": string, "suggestions": [ { "issue": string, "fix": string } ], "rewrittenMarkdown": string }`;
 
   try {
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    const content = await getInternalLLM().generate({
+      system: systemPrompt,
+      prompt: userPrompt,
+      json: true,
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      return {
-        ...fallbackResult(originalText, truncated, url),
-        notes: [`OpenAI request failed (${resp.status}): ${errText.slice(0, 200)}`],
-      };
-    }
-
-    const data = (await resp.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = data?.choices?.[0]?.message?.content;
     if (!content) {
       return {
         ...fallbackResult(originalText, truncated, url),

@@ -53,3 +53,5 @@ supabase/.branches/
 
 # gstack skill suite repo (nested .git — kept local, not committed)
 .claude/skills/gstack
+
+.vercel

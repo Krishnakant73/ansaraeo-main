@@ -1,20 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import BlindDiscoveryClient from "./BlindDiscoveryClient";
 
-export default async function BlindDiscoveryPage() {
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/blind-discovery.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-
-  if (!brand) {
-    return (
-      <div className="card p-6">
-        <p className="text-sm text-muted">No brand selected. Set up or select a brand first.</p>
-      </div>
-    );
-  }
-
-  // Chat-completion engines suited to repeated sampling (google_ai_overview
-  // is a SERP scrape and is intentionally excluded).
-  const engines = ["chatgpt", "perplexity", "gemini", "grok", "copilot"];
-
-  return <BlindDiscoveryClient brandId={brand.id} brandName={brand.name} engines={engines} />;
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/blind-discovery`);
 }

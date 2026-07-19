@@ -19,6 +19,7 @@
 //    shared PDF report path.
 // ============================================================
 
+import { getInternalLLM } from "@/lib/llm";
 import { callEngine } from "@/lib/visibility-consistency";
 import { deterministicMentionCheck } from "@/lib/mention-matcher";
 
@@ -83,31 +84,12 @@ type Extracted = {
 async function extractWithLlm(answer: string, brandName: string, productName: string): Promise<Extracted | null> {
   if (!process.env.OPENAI_API_KEY) return null;
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "Extract retailer mentions from an AI product-answer. Return JSON: { retailers:[{name,priceStated,citedUrl}], brandPriceStated, brandInStockStated (boolean|null), cheapestRetailer }. brandInStockStated is what the answer claims about availability of the brand's product (true=in stock, false=out of stock, null=not stated).",
-          },
-          {
-            role: "user",
-            content: `Brand: ${brandName}\nProduct: ${productName}\nAnswer:\n${answer}`,
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `Extract retailer mentions from an AI product-answer. Return JSON: { retailers:[{name,priceStated,citedUrl}], brandPriceStated, brandInStockStated (boolean|null), cheapestRetailer }. brandInStockStated is what the answer claims about availability of the brand's product (true=in stock, false=out of stock, null=not stated).`,
+      prompt: `Brand: ${brandName}\nProduct: ${productName}\nAnswer:\n${answer}`,
+      json: true,
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { choices: { message: { content: string } }[] };
-    const parsed = JSON.parse(data.choices[0].message.content) as Extracted;
+    const parsed = JSON.parse(raw ?? "{}") as Extracted;
     return parsed;
   } catch {
     return null;

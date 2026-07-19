@@ -1,10 +1,10 @@
 "use client";
 
-import { Menu, Search } from "lucide-react";
+import { Menu } from "lucide-react";
 import BrandSwitcher from "@/app/dashboard/BrandSwitcher";
 import type { Brand } from "@/lib/selected-brand";
 import UserMenu from "./UserMenu";
-import SearchBar from "./SearchBar";
+import { CommandPaletteTrigger } from "./CommandPalette";
 
 export default function Topbar({
   brands,
@@ -36,7 +36,7 @@ export default function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <SearchBar />
+        <CommandPaletteTrigger />
         <UserMenu email={email} />
       </div>
     </header>

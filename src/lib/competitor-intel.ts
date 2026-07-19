@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getInternalLLM } from "@/lib/llm";
 
 // ============================================================
 // Competitor Intelligence (Batch 24)
@@ -99,14 +100,8 @@ Write a concise, practical outreach/earned-citation brief (max 150 words) for ${
 how to get "${opportunity.domain}" (or the authors behind it) to cite ${brandName} in future AI answers.
 Be specific and actionable. Do not invent partnerships.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: prompt }] }),
-  });
-  if (!res.ok) throw new Error(`Outreach brief generation failed: ${res.status}`);
-  const data = await res.json();
-  return (data.choices?.[0]?.message?.content as string) ?? "";
+  const raw = await getInternalLLM().generate({ prompt });
+  return raw ?? "";
 }
 
 export type BattlecardStat = {
@@ -190,14 +185,8 @@ Respond ONLY with JSON:
 {"competitor": string, "strengths": string[] (2-4, what they do well in AI visibility), "weaknesses": string[] (2-4, gaps ${brandName} can exploit), "recommendation": string (one actionable sentence for ${brandName})}.
 Base every point on the data above. Do not invent facts.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", response_format: { type: "json_object" }, messages: [{ role: "user", content: prompt }] }),
-  });
-  if (!res.ok) throw new Error(`Battlecard generation failed: ${res.status}`);
-  const data = await res.json();
-  return JSON.parse(data.choices?.[0]?.message?.content as string);
+  const raw = await getInternalLLM().generate({ prompt, json: true });
+  return JSON.parse(raw ?? "{}");
 }
 
 // ============================================================

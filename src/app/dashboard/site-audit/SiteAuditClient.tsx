@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import AdvancedSurface, { type ValidatorSignal } from "@/components/dashboard/AdvancedSurface";
 
 type Issue = { check: string; status: "pass" | "warning" | "fail"; detail: string; fix: string; category?: string; fixSnippet?: string };
 type Audit = {
@@ -90,6 +91,55 @@ export default function SiteAuditClient({ brandId, latestAudit }: { brandId: str
   const [loading, setLoading] = useState(false);
   const [audit, setAudit] = useState<Audit | null>(latestAudit);
 
+  // Map real audit findings onto the Advanced validators so the contextual
+  // surface can auto-open the deep checks that are actually relevant. Driven
+  // entirely by recorded issues — never estimated.
+  function auditSignals(a: Audit): ValidatorSignal[] {
+    const issues = a.issues ?? [];
+    const failsIn = (cat: string) =>
+      issues.filter((i) => (i.category ?? categorize(i.check)) === cat && i.status !== "pass");
+    const failsOn = (kws: string[]) =>
+      issues.filter((i) => kws.some((k) => i.check.toLowerCase().includes(k)) && i.status !== "pass");
+    const count = (arr: { length: number }) => `${arr.length} check${arr.length === 1 ? "" : "s"} need work`;
+
+    const structured = failsIn("Structured Data");
+    const aiDiscovery = failsIn("AI Discovery");
+    const crawl = failsIn("Crawlability");
+    const security = failsIn("Security");
+    const perf = failsIn("Performance");
+    const links = failsOn(["internal link", "orphan", "link graph", "broken link"]);
+    const headers = failsOn(["header", "hsts", "csp"]);
+
+    return [
+      {
+        key: "schema",
+        flagged: a.schema_markup_score < 80 || structured.length > 0,
+        reason: structured.length
+          ? count(structured)
+          : a.schema_markup_score < 80
+            ? `Schema score ${a.schema_markup_score}/100`
+            : undefined,
+      },
+      {
+        key: "llmsTxt",
+        flagged: !a.llms_txt_present || aiDiscovery.length > 0,
+        reason: !a.llms_txt_present
+          ? "llms.txt not detected"
+          : aiDiscovery.length
+            ? count(aiDiscovery)
+            : undefined,
+      },
+      { key: "robots", flagged: crawl.length > 0, reason: crawl.length ? count(crawl) : undefined },
+      {
+        key: "headerLinks",
+        flagged: security.length > 0 || headers.length > 0,
+        reason: security.length + headers.length ? count({ length: security.length + headers.length }) : undefined,
+      },
+      { key: "tokenBloat", flagged: perf.length > 0, reason: perf.length ? count(perf) : undefined },
+      { key: "internalLinks", flagged: links.length > 0, reason: links.length ? count(links) : undefined },
+    ];
+  }
+
   async function runAudit() {
     setLoading(true);
     const res = await fetch("/api/site-audit", {
@@ -162,6 +212,12 @@ export default function SiteAuditClient({ brandId, latestAudit }: { brandId: str
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {audit.issues.length > 0 && (
+            <div className="mt-6">
+              <AdvancedSurface signals={auditSignals(audit)} />
             </div>
           )}
 

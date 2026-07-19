@@ -1,36 +1,13 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import { PageHeader } from "@/components/dashboard/page-header";
-import RevenueAttributionClient from "./RevenueAttributionClient";
 
-export default async function RevenuePage() {
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/revenue.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-
-  if (!brand) {
-    return (
-      <div className="text-center">
-        <p className="text-sm text-muted">Set up a brand first.</p>
-        <Link href="/dashboard/onboarding" className="btn-primary mt-4 inline-flex">
-          Start setup
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <PageHeader
-        title={`Revenue Attribution — ${brand.name}`}
-        subtitle="AI search → sessions → orders → revenue, in one view."
-        actions={
-          <Link href="/dashboard/settings/analytics" className="btn-secondary !h-10 !px-5">
-            Manage connections
-          </Link>
-        }
-      />
-      <div className="mt-6">
-        <RevenueAttributionClient brandId={brand.id} />
-      </div>
-    </div>
-  );
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/revenue`);
 }

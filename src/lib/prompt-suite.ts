@@ -14,6 +14,7 @@
 // ============================================================
 
 import { mapStarterGroupToIntent, type IntentKey } from "./intent";
+import { getInternalLLM } from "@/lib/llm";
 
 export type PromptSuiteIntent =
   | "recommend"
@@ -100,32 +101,12 @@ Return ONLY valid JSON in this exact shape:
 Use exactly these five intent values: "recommend", "compare", "define", "tutorial", "alternative". Do not add other intents.`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [{ role: "system", content: systemPrompt }],
-        temperature: 0.8,
-      }),
+    const raw = await getInternalLLM().generate({
+      system: systemPrompt,
+      json: true,
+      temperature: 0.8,
     });
-
-    if (!res.ok) {
-      return {
-        suites: [],
-        notes: [`OpenAI request failed (${res.status}). Try again later.`],
-      };
-    }
-
-    const json = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const content = json.choices?.[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content) as RawResponse;
+    const parsed = JSON.parse(raw ?? "{}") as RawResponse;
 
     const rawSuites = Array.isArray(parsed?.suites) ? parsed.suites : [];
     const suites: PromptSuite[] = rawSuites

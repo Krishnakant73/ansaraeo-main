@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { getInternalLLM } from "@/lib/llm";
 import { reconcileMentionSignal } from "@/lib/mention-matcher";
 import { fetchGoogleAIOverview } from "@/lib/google-ai-overview";
 import { computeSourceQuality, normalizeDomain } from "@/lib/citation-quality";
@@ -8,6 +9,14 @@ import { safeRecordRunHistory, safeRecordSkippedHistory } from "@/lib/history-en
 import { safeMarkBenchmarkDirty } from "@/lib/benchmark-engine";
 import { bucketMonth } from "@/lib/benchmark-metrics";
 
+// ───────────────────────────────────────────────────────────────
+// ⚠️  ANSWER ENGINES = MEASUREMENT TARGETS, NOT THE INTERNAL LLM.
+// The callers below (callChatGPT, callGemini, callPerplexity,
+// callGrok, callCopilot, callGoogleAIOverview) measure whether a
+// CUSTOMER-facing engine mentions the brand. They are NOT
+// InternalLLMProvider instances (src/lib/llm/*) and must never share
+// code with that module. See src/lib/llm/README.md.
+// ───────────────────────────────────────────────────────────────
 type EngineResult = { content: string; citedUrls: string[]; skipped?: boolean; skipReason?: string };
 
 async function callChatGPT(promptText: string): Promise<EngineResult> {
@@ -138,38 +147,14 @@ async function classifyResponse(
   competitorNames: string[],
   promptText: string
 ): Promise<ClassificationResult> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You extract structured facts from an AI answer, checking for one main brand AND a list of " +
-            "named competitors. Respond ONLY with JSON: " +
-            '{"brand_mentioned": boolean, "brand_position": number|null, "sentiment": "positive"|"neutral"|"negative", ' +
-            '"cited_urls": string[], "competitor_mentions": [{"name": string, "mentioned": boolean, "position": number|null}], ' +
-            '"recommendation_alignment": "aligned"|"misaligned"|"neutral"}. ' +
-            "Include EVERY competitor from the provided list in competitor_mentions, even if mentioned=false. " +
-            'recommendation_alignment: "aligned" if the brand is described correctly and recommended for the ' +
-            'use case implied by the prompt, "misaligned" if described incorrectly or for the wrong use case, ' +
-            '"neutral" if not applicable (brand not mentioned).',
-        },
-        {
-          role: "user",
-          content: `Main brand to check for: "${brandName}"\nCompetitors to also check for: ${
-            competitorNames.length > 0 ? competitorNames.join(", ") : "(none provided)"
-          }\n\nOriginal prompt / question:\n${promptText}\n\nAI answer text:\n${responseText}`,
-        },
-      ],
-    }),
+  const raw = await getInternalLLM().generate({
+    system: `You extract structured facts from an AI answer, checking for one main brand AND a list of named competitors. Respond ONLY with JSON: {"brand_mentioned": boolean, "brand_position": number|null, "sentiment": "positive"|"neutral"|"negative", "cited_urls": string[], "competitor_mentions": [{"name": string, "mentioned": boolean, "position": number|null}], "recommendation_alignment": "aligned"|"misaligned"|"neutral"}. Include EVERY competitor from the provided list in competitor_mentions, even if mentioned=false. recommendation_alignment: "aligned" if the brand is described correctly and recommended for the use case implied by the prompt, "misaligned" if described incorrectly or for the wrong use case, "neutral" if not applicable (brand not mentioned).`,
+    prompt: `Main brand to check for: "${brandName}"\nCompetitors to also check for: ${
+      competitorNames.length > 0 ? competitorNames.join(", ") : "(none provided)"
+    }\n\nOriginal prompt / question:\n${promptText}\n\nAI answer text:\n${responseText}`,
+    json: true,
   });
-  if (!res.ok) throw new Error(`Classification error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  const parsed = JSON.parse(data.choices[0].message.content) as Partial<ClassificationResult>;
+  const parsed = JSON.parse(raw ?? "{}") as Partial<ClassificationResult>;
   // Defensive default: if the model omits the field, treat as neutral.
   const alignment = parsed.recommendation_alignment;
   const safeAlignment: ClassificationResult["recommendation_alignment"] =

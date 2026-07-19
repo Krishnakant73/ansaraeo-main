@@ -1,23 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import { PageHeader } from "@/components/dashboard/page-header";
-import AlertsClient from "./AlertsClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AlertsPage() {
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/alerts.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-  if (!brand) {
-    return (
-      <div className="text-sm text-muted">Add a brand first to set up alert rules.</div>
-    );
-  }
-  return (
-    <div>
-      <PageHeader
-        title="Alerts"
-        subtitle="Get notified when a metric drops, worsens, or spikes vs its prior window."
-      />
-      <AlertsClient brandId={brand.id} />
-    </div>
-  );
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/alerts`);
 }

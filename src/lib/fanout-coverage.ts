@@ -25,6 +25,7 @@
 // ============================================================
 
 import * as cheerio from "cheerio";
+import { getInternalLLM } from "@/lib/llm";
 
 export type CoverageStatus = "answered" | "partial" | "missing" | "unknown";
 
@@ -136,31 +137,15 @@ Return ONLY valid JSON:
 }`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [{ role: "system", content: systemPrompt }],
-        temperature: 0.4,
-      }),
+    const raw = await getInternalLLM().generate({
+      system: systemPrompt,
+      json: true,
+      temperature: 0.4,
     });
-    if (!res.ok) {
-      return {
-        topic,
-        source: { url: sourceUrl, hasContent, truncated },
-        coveragePercent: 0,
-        questions: [],
-        notes: [`OpenAI request failed (${res.status}). Try again later.`, ...notes],
-      };
-    }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const parsed = JSON.parse(json.choices?.[0]?.message?.content ?? "{}") as {
+    const parsed = JSON.parse(raw ?? "{}") as {
       questions?: unknown;
     };
-    const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
-    const questions: FanoutQuestion[] = raw
+    const questions: FanoutQuestion[] = (Array.isArray(parsed.questions) ? (parsed.questions as unknown[]) : [])
       .map((q): FanoutQuestion | null => {
         if (!q || typeof q !== "object") return null;
         const r = q as Record<string, unknown>;

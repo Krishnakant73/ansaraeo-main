@@ -28,6 +28,12 @@ export type ConsistencyResult = {
   notes: string[];
 };
 
+// ──────────────────────────────────────────────────────────
+// ⚠️  ANSWER ENGINES = MEASUREMENT TARGETS, NOT THE INTERNAL LLM.
+// callEngine below measures whether a CUSTOMER-facing engine mentions
+// the brand. It is NOT an InternalLLMProvider (src/lib/llm/*) and
+// must never share code with that module. See src/lib/llm/README.md.
+// ──────────────────────────────────────────────────────────
 type EngineResult = { content: string };
 
 // Minimal local engine caller — returns the answer text ONLY.

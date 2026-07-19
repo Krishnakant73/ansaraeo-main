@@ -1,3 +1,5 @@
+import { getInternalLLM } from "@/lib/llm";
+
 // ============================================================
 // Answer Block Generator (Batch 28 harvest: kxwu222 aeo-snippet-writer)
 //
@@ -84,31 +86,16 @@ Return ONLY valid JSON:
 }`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [{ role: "system", content: systemPrompt }],
-        temperature: 0.6,
-      }),
+    const raw = await getInternalLLM().generate({
+      system: systemPrompt,
+      json: true,
+      temperature: 0.6,
     });
-    if (!res.ok) {
-      return {
-        question,
-        blocks: [],
-        schemaJsonLd: "",
-        notes: [`OpenAI request failed (${res.status}). Try again later.`],
-      };
-    }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const parsed = JSON.parse(json.choices?.[0]?.message?.content ?? "{}") as {
+    const parsed = JSON.parse(raw ?? "{}") as {
       blocks?: unknown;
       schemaJsonLd?: unknown;
     };
-    const raw = Array.isArray(parsed.blocks) ? parsed.blocks : [];
-    const blocks: AnswerBlock[] = raw
+    const blocks: AnswerBlock[] = (Array.isArray(parsed.blocks) ? (parsed.blocks as unknown[]) : [])
       .map((b): AnswerBlock | null => {
         if (!b || typeof b !== "object") return null;
         const r = b as Record<string, unknown>;

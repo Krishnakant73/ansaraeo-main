@@ -1,3 +1,5 @@
+import { getInternalLLM } from "@/lib/llm";
+
 // ============================================================
 // PDP Generator (Batch 26) — e-commerce Product-Page GEO
 // optimization.
@@ -149,19 +151,8 @@ export async function generatePdp(params: {
   }
 
   // ---- 5. Call OpenAI gpt-4o-mini ONCE (json mode) ----------------
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `Extract structured product data from a product page or product JSON for an e-commerce brand.
+  const raw = await getInternalLLM().generate({
+    system: `Extract structured product data from a product page or product JSON for an e-commerce brand.
 
 Rules:
 - Extract ONLY what is actually present in the provided material. Never invent.
@@ -183,21 +174,11 @@ Respond ONLY as JSON with this exact shape:
   "missing": string[],
   "diagnostics": string[]
 }`,
-        },
-        {
-          role: "user",
-          content: `Brand: ${params.brandName}\n\n${contextParts.join("\n\n")}`,
-        },
-      ],
-    }),
+    prompt: `Brand: ${params.brandName}\n\n${contextParts.join("\n\n")}`,
+    json: true,
   });
 
-  if (!res.ok) {
-    throw new Error(`PDP generation error: ${res.status} ${await res.text()}`);
-  }
-
-  const data = (await res.json()) as { choices: { message: { content: string } }[] };
-  const parsed = JSON.parse(data.choices[0].message.content) as OpenAiPdp;
+  const parsed = JSON.parse(raw) as OpenAiPdp;
 
   // ---- 6. Field-contract validation (name + description) ----------
   const missingFields = Array.from(

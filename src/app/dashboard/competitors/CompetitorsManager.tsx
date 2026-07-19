@@ -3,10 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, Check } from "lucide-react";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+} from "@/components/ui/sheet";
+import CompetitorPanel from "@/components/dashboard/objects/CompetitorPanel";
 
 type Competitor = { id: string; name: string; confirmed: boolean; source: string };
 
-export default function CompetitorsManager({ brandId, competitors }: { brandId: string; competitors: Competitor[] }) {
+export default function CompetitorsManager({
+  brandId,
+  competitors,
+  shareOfVoice = {},
+}: {
+  brandId: string;
+  competitors: Competitor[];
+  shareOfVoice?: Record<string, number>;
+}) {
   const router = useRouter();
   const [discovering, setDiscovering] = useState(false);
   const [newName, setNewName] = useState("");
@@ -81,8 +95,27 @@ export default function CompetitorsManager({ brandId, competitors }: { brandId: 
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {suggested.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 py-1.5 pl-4 pr-2 text-sm">
-                {c.name}
+              <div key={c.id} className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 py-1.5 pl-1 pr-2 text-sm">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button
+                      className="rounded-full px-3 py-0.5 font-medium text-ink outline-none transition-colors hover:text-accent focus-visible:text-accent"
+                      title="Peek competitor"
+                    >
+                      {c.name}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <CompetitorPanel competitor={c} shareOfVoice={shareOfVoice[c.name]} />
+                  </SheetContent>
+                </Sheet>
+                <a
+                  href={`/dashboard/w/competitor/${c.id}/overview`}
+                  className="rounded-full px-1 text-xs text-muted hover:text-accent"
+                  title="Open workspace"
+                >
+                  ↗
+                </a>
                 <button onClick={() => respondTo(c.id, "confirm")} className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-white">
                   <Check className="h-3 w-3" />
                 </button>
@@ -99,9 +132,28 @@ export default function CompetitorsManager({ brandId, competitors }: { brandId: 
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">Tracking</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {confirmed.map((c) => (
-            <span key={c.id} className="rounded-full bg-grid px-4 py-1.5 text-sm font-medium">
-              {c.name}
-            </span>
+            <div key={c.id} className="flex items-center gap-1 rounded-full bg-grid pr-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button
+                    className="rounded-full px-4 py-1.5 text-sm font-medium text-ink outline-none transition-colors hover:text-accent focus-visible:text-accent"
+                    title="Peek competitor"
+                  >
+                    {c.name}
+                  </button>
+                </SheetTrigger>
+                <SheetContent>
+                  <CompetitorPanel competitor={c} shareOfVoice={shareOfVoice[c.name]} />
+                </SheetContent>
+              </Sheet>
+              <a
+                href={`/dashboard/w/competitor/${c.id}/overview`}
+                className="text-xs text-muted hover:text-accent"
+                title="Open workspace"
+              >
+                ↗
+              </a>
+            </div>
           ))}
           {confirmed.length === 0 && <p className="text-sm text-muted">No competitors confirmed yet.</p>}
         </div>

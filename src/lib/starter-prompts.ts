@@ -10,10 +10,11 @@
 // route only needed to `await` it. We never machine-translate: EN/HI are
 // hand-written templates, everything else is generated natively by the model.
 
+import { getInternalLLM } from "@/lib/llm";
 import { languageName } from "./languages";
 import { inferIntentFromText } from "./intent";
 
-type IndustryKey =
+export type IndustryKey =
   | "d2c_fashion"
   | "d2c_beauty"
   | "d2c_food"
@@ -112,30 +113,14 @@ async function generateViaLLM(
   try {
     const native = languageName(lang);
     const industryLabel = INDUSTRIES.find((i) => i.value === params.industry)?.label ?? params.industry;
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You generate realistic, native-language search queries that people in India ask AI answer engines (ChatGPT, Perplexity, Gemini). Respond ONLY as JSON: {\"prompts\": string[]}.",
-          },
-          {
-            role: "user",
-            content: `Generate 5 short, natural ${native}-language search queries a customer would ask an AI assistant about "${params.category}"${
-              params.competitor ? `, comparing it to ${params.competitor}` : ""
-            }${params.city ? `, in ${params.city}` : ""}. Industry: ${industryLabel}. Write them exactly as a native ${native} speaker would type them — not translated English. Return ONLY the JSON object.`,
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `You generate realistic, native-language search queries that people in India ask AI answer engines (ChatGPT, Perplexity, Gemini). Respond ONLY as JSON: {"prompts": string[]}.`,
+      prompt: `Generate 5 short, natural ${native}-language search queries a customer would ask an AI assistant about "${params.category}"${
+        params.competitor ? `, comparing it to ${params.competitor}` : ""
+      }${params.city ? `, in ${params.city}` : ""}. Industry: ${industryLabel}. Write them exactly as a native ${native} speaker would type them — not translated English. Return ONLY the JSON object.`,
+      json: true,
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices[0].message.content);
+    const parsed = JSON.parse(raw ?? "{}");
     return Array.isArray(parsed?.prompts) ? parsed.prompts.slice(0, 6).map(String) : [];
   } catch {
     return [];
@@ -180,4 +165,60 @@ export async function generateStarterPrompts(params: {
   }
 
   return prompts;
+}
+
+// ============================================================
+// generateScanPrompts — used by the public /api/analyze route.
+//
+// The pre-signup free scan runs only 3 prompts × 3 engines = 9 answers,
+// so we pick the highest-value English prompts that cover: (a) a broad
+// discovery prompt ("best X in India"), (b) a comparison prompt ("X vs
+// competitor"), and (c) an intent-specific prompt if we have a city or
+// use-case. This uses the same industry templates as generateStarterPrompts
+// so the free scan is honest about what a paid tracking suite would also
+// track, not a demo-only prompt set.
+//
+// Returns exactly 3 prompts. If the industry has fewer than 3 English
+// templates (edge case), pads with generic "best {category} in India" so
+// the caller always gets 3.
+// ============================================================
+export function generateScanPrompts(params: {
+  industry: IndustryKey;
+  category: string;
+  competitor?: string;
+  city?: string;
+}): { text: string; language: string; intent: string }[] {
+  const set = TEMPLATES[params.industry] ?? TEMPLATES.other;
+  const fill = (template: string) =>
+    template
+      .replace("{category}", params.category)
+      .replace("{competitor}", params.competitor || "other brands")
+      .replace("{city}", params.city || "India");
+
+  const candidates: string[] = [];
+  // 1. broad discovery
+  const broad = set.en.find((t) => t.includes("best ") || t.includes("top ")) ?? "best {category} brands in India";
+  candidates.push(fill(broad));
+  // 2. comparison (only if we have a competitor)
+  const versus = set.en.find((t) => t.includes("{competitor}") || t.includes(" vs "));
+  if (versus) candidates.push(fill(versus));
+  // 3. affordability / intent
+  const intent = set.en.find(
+    (t) => t.includes("affordable") || t.includes("where to buy") || t.includes("near me") || t.includes(params.city ? "{city}" : ""),
+  );
+  if (intent && !candidates.includes(fill(intent))) candidates.push(fill(intent));
+  // Pad with any remaining templates until we have 3.
+  for (const t of set.en) {
+    const filled = fill(t);
+    if (candidates.length >= 3) break;
+    if (!candidates.includes(filled)) candidates.push(filled);
+  }
+  while (candidates.length < 3) {
+    candidates.push(`best ${params.category} in India`);
+  }
+  return candidates.slice(0, 3).map((text) => ({
+    text,
+    language: "en",
+    intent: inferIntentFromText(text),
+  }));
 }

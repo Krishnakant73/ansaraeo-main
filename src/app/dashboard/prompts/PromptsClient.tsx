@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { INDIAN_LANGUAGES, languageName } from "@/lib/languages";
 import { INTENTS, intentLabel } from "@/lib/intent";
 import { Panel } from "@/components/dashboard/panel";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+} from "@/components/ui/sheet";
+import PromptPanel, { type PromptPanelData } from "@/components/dashboard/objects/PromptPanel";
 
 type Prompt = { id: string; text: string; language: string; intent?: string | null; priority?: boolean };
 type EngineResult = { engine: string; success: boolean; brand_mentioned?: boolean; error?: string };
@@ -144,7 +150,30 @@ export default function PromptsClient({ brandId, prompts }: { brandId: string; p
             <tbody>
               {prompts.map((p) => (
                 <tr key={p.id} className="border-b border-line/60 transition-colors hover:bg-surface">
-                  <td className="px-1 py-3">{p.text}</td>
+                  <td className="px-1 py-3">
+                    <div className="flex items-center gap-2">
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <button
+                            className="text-left font-medium text-ink outline-none transition-colors hover:text-accent hover:underline focus-visible:text-accent"
+                            title="Peek prompt"
+                          >
+                            {p.text}
+                          </button>
+                        </SheetTrigger>
+                        <SheetContent>
+                          <PromptPanel prompt={p as PromptPanelData} />
+                        </SheetContent>
+                      </Sheet>
+                      <a
+                        href={`/dashboard/w/prompt/${p.id}/overview`}
+                        className="text-xs font-medium text-muted hover:text-accent"
+                        title="Open full workspace"
+                      >
+                        ↗
+                      </a>
+                    </div>
+                  </td>
                   <td className="px-1 py-3 text-xs font-semibold uppercase text-muted">
                     {languageName(p.language)}
                   </td>

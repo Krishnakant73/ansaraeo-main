@@ -17,6 +17,31 @@
   :focus-visible {
     @apply outline-none ring-2 ring-accent ring-offset-2;
   }
+
+  /* ── Universal Workspace Engine tokens ──
+     Additive only. Reused by every workspace shell / primitive.
+     Widths / heights match the header + summary + tab bar of the
+     WorkspaceShell so downstream sticky offsets stay in one place. */
+  :root {
+    --ws-header-h: 88px;
+    --ws-summary-h: 128px;
+    --ws-tab-h: 44px;
+    --ws-sidebar-w-lg: 360px;
+    --ws-sidebar-w-md: 300px;
+    --ws-gutter: 24px;
+    --ws-easing: cubic-bezier(0.16, 1, 0.3, 1);
+    --ws-motion-fast: 140ms;
+    --ws-motion-med: 220ms;
+    --ws-motion-slow: 360ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --ws-motion-fast: 0ms;
+      --ws-motion-med: 0ms;
+      --ws-motion-slow: 0ms;
+    }
+  }
 }
 
 @layer components {

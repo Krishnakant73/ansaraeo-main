@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check, Send } from "lucide-react";
+import AdvancedSurface, { type ValidatorSignal } from "@/components/dashboard/AdvancedSurface";
 
 type AiIndexResult = {
   llmsTxt: string;
@@ -67,6 +68,31 @@ export default function AiIndexClient({ brandId }: { brandId: string }) {
   const [result, setResult] = useState<AiIndexResult | null>(null);
   const [error, setError] = useState("");
 
+  // When files are generated, surface the validators that check them. A
+  // validator is flagged (auto-opened) only when the generator's own notes
+  // call out a problem with that file — otherwise they sit collapsed for review.
+  function indexSignals(r: AiIndexResult): ValidatorSignal[] {
+    const noteText = r.notes.join(" ").toLowerCase();
+    const hit = (kws: string[]) => kws.some((k) => noteText.includes(k));
+    return [
+      {
+        key: "llmsTxt",
+        flagged: hit(["llms.txt", "llm.txt", "llms"]),
+        reason: hit(["llms"]) ? "Review the generated llms.txt for spec compliance" : undefined,
+      },
+      {
+        key: "robots",
+        flagged: hit(["robots"]),
+        reason: hit(["robots"]) ? "Review the robots block for AI-crawler access" : undefined,
+      },
+      {
+        key: "schema",
+        flagged: hit(["json-ld", "schema", "structured"]),
+        reason: hit(["json-ld", "schema"]) ? "Validate the Organization JSON-LD" : undefined,
+      },
+    ];
+  }
+
   async function run() {
     setLoading(true);
     setError("");
@@ -99,6 +125,10 @@ export default function AiIndexClient({ brandId }: { brandId: string }) {
               ))}
             </div>
           )}
+          <div className="mt-6">
+            <AdvancedSurface signals={indexSignals(result)} />
+          </div>
+
           <FileBlock title="llms.txt" filename="llms.txt" content={result.llmsTxt} />
           <FileBlock title="robots.txt — AI crawler block" filename="robots-ai-block.txt" content={result.robotsSnippet} />
           <FileBlock title="Organization JSON-LD (add to homepage <head>)" filename="organization.jsonld" content={result.jsonLd} />

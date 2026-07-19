@@ -1,47 +1,13 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/dashboard/page-header";
-import SiteAuditClient from "./SiteAuditClient";
+import { redirect } from "next/navigation";
+import { getSelectedBrand } from "@/lib/selected-brand";
 
-export default async function SiteAuditPage() {
-  const supabase = await createClient();
-  const { data: brands } = await supabase.from("brands").select("id, name, domain").limit(1);
-  const brand = brands?.[0];
+export const dynamic = "force-dynamic";
 
-  if (!brand) {
-    return (
-      <div>
-        <PageHeader
-          title="Site Audit"
-          subtitle="Checking your site for AI-bot crawlability, schema markup, and llms.txt"
-        />
-        <div className="empty">
-          <p className="text-sm text-muted">Set up a brand first.</p>
-          <Link href="/dashboard/onboarding" className="btn-primary mt-5">
-            Start setup
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const { data: latestAudit } = await supabase
-    .from("site_audits")
-    .select("*")
-    .eq("brand_id", brand.id)
-    .order("run_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  return (
-    <div>
-      <PageHeader
-        title="Site Audit"
-        subtitle={`Checking ${brand.domain} for AI-bot crawlability, schema markup, and llms.txt`}
-      />
-      <div className="mt-6">
-        <SiteAuditClient brandId={brand.id} latestAudit={latestAudit ?? null} />
-      </div>
-    </div>
-  );
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/site-audit.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
+  const { brand } = await getSelectedBrand();
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/site-audit`);
 }

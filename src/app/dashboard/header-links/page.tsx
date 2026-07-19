@@ -1,27 +1,13 @@
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import { PageHeader } from "@/components/dashboard/page-header";
-import HeaderLinkGraphClient from "./HeaderLinkGraphClient";
 
-export default async function HeaderLinksPage() {
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/header-links.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-
-  if (!brand) {
-    return (
-      <div className="text-center">
-        <p className="text-sm text-muted">Set up a brand first.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <PageHeader
-        title="Header & Link Graph"
-        subtitle="Reads each crawled page's HTTP response headers (not the body) to map the Link: relationship graph and surface per-page AI-discovery signals the homepage-only Site Audit can't: canonical presence, llms.txt/ai.txt advertisement, and per-URL AI-blocking via X-Robots-Tag (which robots.txt cannot express). Deterministic — no LLM, no estimation."
-      />
-      <div className="mt-6">
-        <HeaderLinkGraphClient brandId={brand.id} />
-      </div>
-    </div>
-  );
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/header-links`);
 }

@@ -1,10 +1,11 @@
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import ContentOptimizerClient from "./ContentOptimizerClient";
 
-export default async function Page() {
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/content/optimizer.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-  if (!brand) {
-    return <p className="text-sm text-muted">Set up a brand first.</p>;
-  }
-  return <ContentOptimizerClient brandId={brand.id} brandName={brand.name} />;
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/content/optimizer`);
 }

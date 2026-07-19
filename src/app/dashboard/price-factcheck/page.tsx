@@ -1,16 +1,13 @@
-import { PageHeader } from "@/components/dashboard/page-header";
-import PriceFactCheckClient from "./PriceFactCheckClient";
+import { redirect } from "next/navigation";
+import { getSelectedBrand } from "@/lib/selected-brand";
 
-export default function PriceFactCheckPage() {
-  return (
-    <div>
-      <PageHeader
-        title="Price / Stock Fact-Check"
-        subtitle="Samples AI engines with a buying question for your product, then fact-checks the price and stock the AI asserts for your brand against your true feed values, and ranks you against the competing retailers the AI actually names. Brand presence is a deterministic name check; engine sampling is failure-isolated. Analysis only — nothing is persisted."
-      />
-      <div className="mt-6">
-        <PriceFactCheckClient />
-      </div>
-    </div>
-  );
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/price-factcheck.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
+  const { brand } = await getSelectedBrand();
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/price-factcheck`);
 }

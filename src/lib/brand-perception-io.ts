@@ -1,6 +1,7 @@
 // IO layer for Brand Positioning / AI Perception.
 // Imports the Supabase service client + the pure logic from brand-perception.
 // Kept separate so the pure functions stay unit-testable under vitest (no `@/`).
+import { getInternalLLM } from "@/lib/llm";
 import { createServiceClient } from "@/lib/supabase/server";
 import { reportError } from "@/lib/monitoring";
 import {
@@ -33,37 +34,12 @@ export async function extractBrandPerception(
     return { perceived_category: null, strengths: [], weaknesses: [], recommended_for: [], tone: "neutral" };
   }
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You extract how an AI answer POSITIONS a specific brand. Respond ONLY with JSON: " +
-              '{"perceived_category": string|null, "strengths": string[], "weaknesses": string[], ' +
-              '"recommended_for": string[], "tone": "positive"|"neutral"|"negative"}. ' +
-              "perceived_category = the category the answer places the brand in (e.g. 'AI search optimization tool'). " +
-              "strengths/weaknesses = concrete attributes the answer attributes to the brand, in the answer's own words. " +
-              "recommended_for = the use cases or audiences the answer says the brand is best for. " +
-              "tone = overall sentiment toward the brand. Output the brand's ACTUAL words, do not invent.",
-          },
-          {
-            role: "user",
-            content: `Brand to analyze: "${brandName}"\n\nAI answer text:\n${responseText}`,
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `You extract how an AI answer POSITIONS a specific brand. Respond ONLY with JSON: {"perceived_category": string|null, "strengths": string[], "weaknesses": string[], "recommended_for": string[], "tone": "positive"|"neutral"|"negative"}. perceived_category = the category the answer places the brand in (e.g. 'AI search optimization tool'). strengths/weaknesses = concrete attributes the answer attributes to the brand, in the answer's own words. recommended_for = the use cases or audiences the answer says the brand is best for. tone = overall sentiment toward the brand. Output the brand's ACTUAL words, do not invent.`,
+      prompt: `Brand to analyze: "${brandName}"\n\nAI answer text:\n${responseText}`,
+      json: true,
     });
-    if (!res.ok) return { perceived_category: null, strengths: [], weaknesses: [], recommended_for: [], tone: "neutral" };
-    const data = await res.json();
-    return parseBrandPerception(JSON.parse(data.choices[0].message.content));
+    return parseBrandPerception(JSON.parse(raw ?? "{}"));
   } catch {
     return { perceived_category: null, strengths: [], weaknesses: [], recommended_for: [], tone: "neutral" };
   }

@@ -2,6 +2,20 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+// Load `.env.local` from the repo root (two levels up from dist/index.js) so the
+// MCP server picks up NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY without
+// requiring the parent shell to export them. Uses Node 22's built-in loader —
+// no dotenv dep. Silently skips if the file is missing so env-based deployments
+// still work.
+try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    process.loadEnvFile(resolve(here, "..", "..", ".env.local"));
+}
+catch {
+    // No .env.local — rely on whatever is already in process.env.
+}
 const server = new McpServer({ name: "ansar-aeo", version: "0.1.0" });
 // Lazily construct a service-role Supabase client. We only build it when a tool
 // is actually called, so the server starts even if env vars are absent (it will

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getInternalLLM } from "@/lib/llm";
 
 // ============================================================
 // Content Gaps + keyword research (Batch 25)
@@ -89,17 +90,10 @@ Propose 8 NEW, high-intent questions a real customer might ask an AI assistant (
 
 Respond ONLY as JSON: {"suggestions": [{"prompt": string, "rationale": string (one short sentence why it matters)}]}.`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
-    }),
+  const raw = await getInternalLLM().generate({
+    prompt,
+    json: true,
   });
-  if (!res.ok) throw new Error(`Keyword suggestion failed: ${res.status}`);
-  const data = await res.json();
-  const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+  const parsed = JSON.parse(raw ?? "{}");
   return (parsed.suggestions ?? []) as KeywordSuggestion[];
 }

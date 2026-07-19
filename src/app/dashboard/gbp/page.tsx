@@ -1,16 +1,13 @@
-import { PageHeader } from "@/components/dashboard/page-header";
-import GbpClient from "./GbpClient";
+import { redirect } from "next/navigation";
+import { getSelectedBrand } from "@/lib/selected-brand";
 
-export default function GbpPage() {
-  return (
-    <div>
-      <PageHeader
-        title="Local SEO — Google Business Profile"
-        subtitle='Check whether your business profile is claimed and well-maintained — a key local-SEO signal for AI maps and "near me" answers.'
-      />
-      <div className="mt-6">
-        <GbpClient />
-      </div>
-    </div>
-  );
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/gbp.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
+  const { brand } = await getSelectedBrand();
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/gbp`);
 }

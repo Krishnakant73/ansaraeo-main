@@ -1,0 +1,652 @@
+openapi: 3.1.0
+info:
+  title: AnsarAEO Cloud Platform API
+  version: 1.0.0
+  description: >
+    Public, versioned API for AnsarAEO Cloud — AI discovery management.
+    Phase 1 surface: capabilities, async visibility checks, run listing, webhooks.
+    Phase 2 surface: trust verification (verify a claim, list trust records).
+    Phase 3 surface: AI Discovery Agent (create task, poll, human-in-loop approve).
+    All errors use the shared error shape. See docs/PHASE1_API_GATEWAY.md,
+    docs/PHASE2_TRUST_ENGINE.md, and docs/PHASE3_AGENT_RUNTIME.md.
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: api.ansaraeo.com
+    description: Production (versioned)
+  - url: http://localhost:3000/api/v1
+    description: Local dev
+security:
+  - apiKeyAuth: []
+tags:
+  - name: Discovery
+  - name: Webhooks
+  - name: Trust
+  - name: Agent
+paths:
+  /capabilities:
+    get:
+      tags: [Discovery]
+      operationId: getCapabilities
+      summary: Live engines + regions available to this tenant
+      security:
+        - apiKeyAuth: [visibility:read]
+      responses:
+        "200":
+          description: Capabilities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capabilities"
+  /visibility/checks:
+    post:
+      tags: [Discovery]
+      operationId: createVisibilityCheck
+      summary: Enqueue a visibility check (async)
+      security:
+        - apiKeyAuth: [visibility:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisibilityCheckRequest"
+      responses:
+        "202":
+          description: Accepted — task enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /visibility/checks/{id}:
+    get:
+      tags: [Discovery]
+      operationId: getVisibilityCheck
+      summary: Poll a visibility check task
+      security:
+        - apiKeyAuth: [visibility:read]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /visibility/runs:
+    get:
+      tags: [Discovery]
+      operationId: listVisibilityRuns
+      summary: List visibility runs for the tenant's brands
+      security:
+        - apiKeyAuth: [visibility:read]
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisibilityRuns"
+  /webhooks:
+    get:
+      tags: [Webhooks]
+      operationId: listWebhooks
+      security:
+        - apiKeyAuth: [webhooks:manage]
+      responses:
+        "200":
+          description: Subscriptions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WebhookSubscription"
+    post:
+      tags: [Webhooks]
+      operationId: createWebhook
+      summary: Create a webhook subscription (returns raw secret once)
+      security:
+        - apiKeyAuth: [webhooks:manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: http
+      scheme: bearer
+      description: Platform API key (aka_sk_…). Scopes are enforced per route.
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing/invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Missing scope / tenant mismatch
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, retryable]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryable:
+              type: boolean
+            capability:
+              type: string
+    Capabilities:
+      type: object
+      properties:
+        engines:
+          type: array
+          items:
+            $ref: "#/components/schemas/EngineCapability"
+        regions:
+          type: array
+          items:
+            type: string
+    EngineCapability:
+      type: object
+      properties:
+        name:
+          type: string
+        available:
+          type: boolean
+        reason:
+          type: string
+    VisibilityCheckRequest:
+      type: object
+      required: [promptId]
+      properties:
+        promptId:
+          type: string
+          format: uuid
+        idempotencyKey:
+          type: string
+    TaskAccepted:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status_url:
+          type: string
+        webhook_events:
+          type: array
+          items:
+            type: string
+    TaskStatus:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, done, failed, dead]
+        result:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+    VisibilityRuns:
+      type: object
+      properties:
+        runs:
+          type: array
+          items:
+            type: object
+    WebhookSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    WebhookCreateRequest:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+          minItems: 1
+    WebhookCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        events:
+          type: array
+          items:
+            type: string
+        secret:
+          type: string
+          description: Raw signing secret — shown ONLY in this response.
+    TrustVerifyRequest:
+      type: object
+      required: [claim]
+      properties:
+        claim:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        evidenceRefs:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          description: >
+            Evidence references. Inline proof is supported via the
+            "evidence:<text>" prefix (the exact text the claim is verified
+            against). DB-resolvable refs (citation UUIDs / URLs) are a future hook.
+        async:
+          type: boolean
+          description: Enqueue a trust_verify job instead of verifying inline.
+    VerificationResult:
+      type: object
+      required: [claimId, method, verdict, score, reasoning, provenance, signature]
+      properties:
+        claimId:
+          type: string
+          description: Content-addressed sha256(claim|evidenceRefs).
+        method:
+          type: string
+          enum: [deterministic, llm, hybrid]
+        verdict:
+          type: string
+          enum: [verified, refuted, unverifiable]
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        reasoning:
+          type: string
+        provenance:
+          type: object
+          properties:
+            engine:
+              type: string
+            model:
+              type: string
+            deterministicCheck:
+              type: string
+            inputsHash:
+              type: string
+            ts:
+              type: string
+              format: date-time
+        signature:
+          type: string
+          description: HMAC over claimId|verdict|score|inputsHash.
+    TrustRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        claim_id:
+          type: string
+        claim:
+          type: string
+        method:
+          type: string
+        verdict:
+          type: string
+        score:
+          type: number
+        reasoning:
+          type: string
+        provenance:
+          type: object
+        signature:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TrustRecords:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrustRecord"
+    AgentStep:
+      type: object
+      required: [id, kind, input, status]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [discover, check, analyze, draft, verify, publish, deprecate, external_send]
+        input:
+          type: object
+        status:
+          type: string
+          enum: [pending, running, awaiting_approval, done, failed]
+        output:
+          type: object
+          nullable: true
+        approvalAction:
+          type: string
+          enum: [publish, deprecate, external_send]
+          description: Present when the step is blocked on Governance approval.
+    AgentTaskRequest:
+      type: object
+      required: [goal, brandId]
+      properties:
+        goal:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        brandId:
+          type: string
+          format: uuid
+        policyId:
+          type: string
+          format: uuid
+        guardrails:
+          type: object
+          properties:
+            maxExternalSends:
+              type: integer
+              minimum: 0
+            requireApproval:
+              type: array
+              items:
+                type: string
+                enum: [publish, deprecate, external_send]
+    AgentTaskCreated:
+      type: object
+      required: [task_id, state, plan]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [planning, executing, awaiting_approval, done, failed]
+        plan:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentStep"
+        webhook_events:
+          type: array
+          items:
+            type: string
+    AgentTask:
+      type: object
+      required: [task_id, state, plan]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        brand_id:
+          type: string
+          format: uuid
+        goal:
+          type: string
+        state:
+          type: string
+          enum: [planning, executing, awaiting_approval, done, failed]
+        plan:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentStep"
+        guardrails:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ApprovalDecision:
+      type: object
+      required: [stepId]
+      properties:
+        stepId:
+          type: string
+          minLength: 1
+        decision:
+          type: string
+          enum: [approved, rejected]
+  /trust/verify:
+    post:
+      tags: [Trust]
+      operationId: verifyTrust
+      summary: Verify a claim against evidence (sync or async)
+      security:
+        - apiKeyAuth: [trust:read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrustVerifyRequest"
+      responses:
+        "200":
+          description: Verification result (sync)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResult"
+        "202":
+          description: Accepted — trust_verify job enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /trust/records:
+    get:
+      tags: [Trust]
+      operationId: listTrustRecords
+      summary: List trust_records for the tenant
+      security:
+        - apiKeyAuth: [trust:read]
+      responses:
+        "200":
+          description: Trust records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrustRecords"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /agent/tasks:
+    post:
+      tags: [Agent]
+      operationId: createAgentTask
+      summary: Create an agent task (plan + enqueue first step)
+      security:
+        - apiKeyAuth: [agent:run]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTaskRequest"
+      responses:
+        "202":
+          description: Accepted — task created and first step enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTaskCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /agent/tasks/{id}:
+    get:
+      tags: [Agent]
+      operationId: getAgentTask
+      summary: Poll an agent task (state + inspectable plan)
+      security:
+        - apiKeyAuth: [agent:run]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTask"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /agent/tasks/{id}/approve:
+    post:
+      tags: [Agent]
+      operationId: approveAgentStep
+      summary: Human-in-the-loop decision for a Governance-gated step
+      description: >
+        On `approved`, the step's gated action executes for real: `publish` inserts a
+        published `content_items` row linked to the trust-gated `claim_id`;
+        `deprecate` reversibly unpublishes that item (status back to `draft`);
+        `external_send` fires a signed `agent.external_send` webhook event to the
+        tenant's subscriptions via the Phase 1 delivery pipeline. The action only
+        runs after the trust gate AND this approval have both passed.
+      security:
+        - apiKeyAuth: [agent:run]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecision"
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    format: uuid
+                  approved:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"

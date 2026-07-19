@@ -1,26 +1,13 @@
-import { PageHeader } from "@/components/dashboard/page-header";
-import LlmsTxtValidatorClient from "./LlmsTxtValidatorClient";
+import { redirect } from "next/navigation";
+import { getSelectedBrand } from "@/lib/selected-brand";
 
-export default function LlmsTxtValidatorPage() {
-  return (
-    <div>
-      <PageHeader
-        title="llms.txt Validator"
-        subtitle={
-          <>
-            A deterministic grammar check of an{" "}
-            <a className="underline" href="https://llmstxt.org" target="_blank" rel="noreferrer">
-              llms.txt
-            </a>{" "}
-            file against the spec — single H1, blockquote summary, H2 link-list sections, no stray prose, fetchable
-            links, and (when validating a live URL) the discovery headers agents look for. No API key; results are
-            reproducible.
-          </>
-        }
-      />
-      <div className="mt-6">
-        <LlmsTxtValidatorClient />
-      </div>
-    </div>
-  );
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/llms-txt.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
+  const { brand } = await getSelectedBrand();
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/llms-txt`);
 }

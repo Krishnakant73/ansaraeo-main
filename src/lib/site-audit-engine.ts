@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { getInternalLLM } from "@/lib/llm";
 
 // ============================================================
 // Site Audit Engine (Part 4, Tier 4 / Part 9, Section B)
@@ -817,28 +818,12 @@ async function attachFixSnippets(issues: AuditIssue[]): Promise<void> {
   const toFix = issues.filter((i) => i.status !== "pass");
   if (!key || toFix.length === 0) return;
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an SEO/GEO engineer. For each website audit issue, produce ONE concise, copy-pasteable code or config snippet the site owner can apply to fix it. Respond ONLY as JSON: {\"snippets\": { \"<check>\": \"<snippet>\" }}. Keep each snippet under 220 characters. No prose.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify(toFix.map((i) => ({ check: i.check, detail: i.detail, fix: i.fix }))),
-          },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `You are an SEO/GEO engineer. For each website audit issue, produce ONE concise, copy-pasteable code or config snippet the site owner can apply to fix it. Respond ONLY as JSON: {"snippets": { "<check>": "<snippet>" }}. Keep each snippet under 220 characters. No prose.`,
+      prompt: JSON.stringify(toFix.map((i) => ({ check: i.check, detail: i.detail, fix: i.fix }))),
+      json: true,
     });
-    if (!res.ok) return;
-    const data = await res.json();
-    const snippets = (JSON.parse(data.choices[0].message.content).snippets ?? {}) as Record<string, string>;
+    const snippets = (JSON.parse(raw ?? "{}").snippets ?? {}) as Record<string, string>;
     for (const issue of issues) {
       if (issue.status !== "pass" && snippets[issue.check]) {
         issue.fixSnippet = String(snippets[issue.check]);

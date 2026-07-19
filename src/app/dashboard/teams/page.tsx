@@ -1,53 +1,13 @@
-import { Users } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import { PageHeader } from "@/components/dashboard/page-header";
-import { Panel } from "@/components/dashboard/panel";
-import { EmptyState } from "@/components/dashboard/empty-state";
-import SimpleResourceForm from "@/components/dashboard/workflow/SimpleResourceForm";
-import type { FieldDef } from "@/components/dashboard/workflow/SimpleResourceForm";
 
 export const dynamic = "force-dynamic";
 
-const FORM_FIELDS: FieldDef[] = [
-  { name: "name", label: "Team name", required: true, placeholder: "SEO Pod" },
-  { name: "description", label: "Description", type: "textarea" },
-];
-
-export default async function TeamsPage() {
-  const supabase = await createClient();
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/teams.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-  if (!brand) {
-    return <EmptyState icon={<Users className="h-6 w-6" />} title="No brand selected" description="Select a brand to manage teams." />;
-  }
-  const { data: b } = await supabase.from("brands").select("org_id").eq("id", brand.id).single();
-  const orgId = (b as { org_id: string } | null)?.org_id;
-
-  const { data: teams } = orgId
-    ? await supabase.from("teams").select("*").eq("org_id", orgId).order("created_at", { ascending: false })
-    : { data: null };
-
-  return (
-    <div>
-      <PageHeader
-        title="Teams"
-        subtitle="Collaboration units across your org. Assign missions and tasks to teams."
-        actions={<SimpleResourceForm resource="teams" buttonLabel="New team" fields={FORM_FIELDS} />}
-      />
-      <Panel title={`Teams (${teams?.length ?? 0})`}>
-        {!teams?.length ? (
-          <p className="text-sm text-muted">No teams yet.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {teams.map((t: any) => (
-              <li key={t.id} className="py-3">
-                <p className="text-sm font-medium text-ink">{t.name}</p>
-                {t.description && <p className="text-xs text-muted">{t.description}</p>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-    </div>
-  );
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/teams`);
 }

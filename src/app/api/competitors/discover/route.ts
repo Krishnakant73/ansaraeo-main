@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getInternalLLM } from "@/lib/llm";
 
 // ============================================================
 // POST /api/competitors/discover — Body: { brandId }
@@ -13,31 +14,12 @@ import { createClient } from "@/lib/supabase/server";
 // ============================================================
 
 async function findCompetitors(brandName: string, domain: string, industry: string | null): Promise<string[]> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You identify real, well-known market competitors for a given brand. Respond ONLY as JSON: " +
-            '{"competitors": string[]}. List 3-5 real, specific competitor brand/company names — never invent ' +
-            "fictional companies, and never include the brand itself. If you are not confident about real " +
-            "competitors for this brand, return fewer results rather than guessing.",
-        },
-        {
-          role: "user",
-          content: `Brand: "${brandName}" (${domain})${industry ? `, industry: ${industry}` : ""}. Who are its real, direct market competitors?`,
-        },
-      ],
-    }),
+  const raw = await getInternalLLM().generate({
+    system: `You identify real, well-known market competitors for a given brand. Respond ONLY as JSON: {"competitors": string[]}. List 3-5 real, specific competitor brand/company names — never invent fictional companies, and never include the brand itself. If you are not confident about real competitors for this brand, return fewer results rather than guessing.`,
+    prompt: `Brand: "${brandName}" (${domain})${industry ? `, industry: ${industry}` : ""}. Who are its real, direct market competitors?`,
+    json: true,
   });
-  if (!res.ok) throw new Error(`Competitor discovery error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  const parsed = JSON.parse(data.choices[0].message.content);
+  const parsed = JSON.parse(raw ?? "{}");
   return (parsed.competitors as string[]) ?? [];
 }
 

@@ -1,3 +1,5 @@
+import { getInternalLLM } from "@/lib/llm";
+
 // ============================================================
 // Brand Signals — social listening (Batch 25)
 //
@@ -108,27 +110,12 @@ async function classifySentiment(
   }
   const numbered = mentions.map((m, i) => `${i + 1}. ${m.title} — ${m.snippet}`).join("\n").slice(0, 6000);
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: `Classify the sentiment of each numbered social post TOWARD the brand "${brandName}". Respond ONLY as JSON: {"results": [{"n": number, "sentiment": "positive"|"neutral"|"negative"}]}. If a post doesn't clearly praise or criticize the brand, use "neutral".`,
-          },
-          { role: "user", content: numbered },
-        ],
-      }),
+    const raw = await getInternalLLM().generate({
+      system: `Classify the sentiment of each numbered social post TOWARD the brand "${brandName}". Respond ONLY as JSON: {"results": [{"n": number, "sentiment": "positive"|"neutral"|"negative"}]}. If a post doesn't clearly praise or criticize the brand, use "neutral".`,
+      prompt: numbered,
+      json: true,
     });
-    if (!res.ok) {
-      base.neutral = mentions.length;
-      return base;
-    }
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+    const parsed = JSON.parse(raw ?? "{}");
     for (const r of parsed.results ?? []) {
       if (r.sentiment === "positive") base.positive += 1;
       else if (r.sentiment === "negative") base.negative += 1;

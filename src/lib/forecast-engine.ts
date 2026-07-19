@@ -132,14 +132,42 @@ function svc() {
 }
 
 export type ForecastTarget = {
-  scope: "brand" | "anonymous";
+  scope: "brand" | "anonymous" | "prompt";
   brandId?: string | null;
+  /** Required when scope='prompt'; used to load visibility_runs + attribute the row. */
+  promptId?: string | null;
   dimensionType: string;
   dimensionValue: string;
   engine?: string | null;
   metric: string;
   horizonMonths?: number;
 };
+
+/**
+ * Pure — bucket visibility_run rows into monthly mention_rate series.
+ * Rows with brand_mentioned=null (skipped engine, e.g. google_ai_overview
+ * that returned no AI Overview) do not count in numerator OR denominator.
+ * Empty months are omitted (the forecaster sees only observed months).
+ */
+export function bucketPromptMonthly(
+  rows: { run_at: string; brand_mentioned: boolean | null }[],
+): { period: string; value: number }[] {
+  const buckets = new Map<string, { count: number; hit: number }>();
+  for (const r of rows) {
+    if (r.brand_mentioned === null) continue;
+    const period = bucketMonth(r.run_at);
+    const cur = buckets.get(period) ?? { count: 0, hit: 0 };
+    cur.count += 1;
+    if (r.brand_mentioned === true) cur.hit += 1;
+    buckets.set(period, cur);
+  }
+  const out: { period: string; value: number }[] = [];
+  for (const [period, { count, hit }] of buckets) {
+    if (count > 0) out.push({ period, value: hit / count });
+  }
+  out.sort((a, b) => (a.period < b.period ? -1 : a.period > b.period ? 1 : 0));
+  return out;
+}
 
 /**
  * Generate a forecast for a brand-level snapshot series or an anonymous
@@ -151,7 +179,46 @@ export async function generateForecast(target: ForecastTarget): Promise<Forecast
   const horizon = target.horizonMonths ?? 6;
 
   let series: { period: string; value: number }[] = [];
-  if (target.scope === "brand" && target.brandId) {
+  if (target.scope === "prompt" && target.promptId) {
+    // Prompt scope — bucket monthly mention_rate from raw runs. Only
+    // supports `mention_rate` today; position/citation would need per-run
+    // aggregations that aren't warehoused per prompt yet.
+    if (target.metric !== "mention_rate") {
+      throw new Error(`prompt scope only supports metric=mention_rate (got ${target.metric})`);
+    }
+    const query = supabase
+      .from("visibility_runs")
+      .select("run_at, brand_mentioned")
+      .eq("prompt_id", target.promptId)
+      .order("run_at", { ascending: true })
+      .limit(2000);
+    const { data } = target.engine
+      ? await query.eq("engine_id", target.engine)
+      : await query;
+    series = bucketPromptMonthly(
+      ((data ?? []) as { run_at: string; brand_mentioned: boolean | null }[]) ?? [],
+    );
+    const result = etsForecast(series, horizon, { bounds: { min: 0, max: 1 } });
+    await supabase.from("forecast_runs").upsert(
+      {
+        scope: "prompt",
+        brand_id: target.brandId ?? null,
+        dimension_type: target.dimensionType || "prompt",
+        dimension_value: target.dimensionValue || target.promptId,
+        engine: target.engine ?? null,
+        metric: target.metric,
+        horizon_months: horizon,
+        point_forecast: JSON.stringify(result.point),
+        lower_band: JSON.stringify(result.lower),
+        upper_band: JSON.stringify(result.upper),
+        confidence: result.confidence,
+        insufficient_history: result.insufficient_history,
+        generated_at: new Date().toISOString(),
+      },
+      { onConflict: "scope,brand_id,dimension_type,dimension_value,engine,metric,horizon_months" },
+    );
+    return result;
+  } else if (target.scope === "brand" && target.brandId) {
     const { data } = await supabase
       .from("benchmark_brand_snapshots")
       .select("period_start, mention_rate, citation_rate, avg_position, avg_trust, avg_visibility")

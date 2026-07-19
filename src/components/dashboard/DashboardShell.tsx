@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { Brand } from "@/lib/selected-brand";
-import { NAV_GROUPS, isNavActive } from "./nav-config";
 import Topbar from "./Topbar";
+import Breadcrumbs from "./Breadcrumbs";
+import Shortcuts from "./Shortcuts";
+import ObjectsRail from "./ObjectsRail";
+import CommandPalette from "./CommandPalette";
+import CopilotDock from "./CopilotDock";
+import RecentObjectsTracker from "./RecentObjectsTracker";
 
 function Brandmark() {
   return (
@@ -23,72 +26,63 @@ function Brandmark() {
   );
 }
 
-function NavContent({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-  return (
-    <nav className="space-y-0.5">
-      {NAV_GROUPS.map((group) => (
-        <div key={group.label}>
-          <p className="nav-group-label">{group.label}</p>
-          {group.items.map((item) => {
-            const active = isNavActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={cn("nav-link", active && "nav-link-active")}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
-    </nav>
-  );
-}
+// ============================================================
+// DashboardShell — Phase 1 IA.
+//
+// Rail  = 8 objects + Recent + collapsible More.
+// Topbar = brand switcher + ⌘K trigger + user menu.
+// Body  = the workspace body.
+// Dock  = Copilot on the right (desktop) or bottom sheet (mobile).
+//
+// The 10-group flat nav in nav-config.ts is retained ONLY for
+// FEATURE_TO_NAV_HREFS gating and for the palette's `go` commands to
+// hydrate against. Users no longer see it as chrome.
+// ============================================================
 
 export default function DashboardShell({
   brands,
   selectedBrandId,
+  selectedBrandSlug,
   email,
+  hiddenHrefs,
   children,
 }: {
   brands: Brand[];
   selectedBrandId: string | null;
+  selectedBrandSlug: string | null;
   email: string | null;
+  hiddenHrefs?: string[];
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const hasBrand = !!selectedBrandId;
+  const lockedFeatures = hiddenHrefs ?? [];
 
   return (
     <div className="min-h-screen bg-surface app-gradient md:flex">
-      {/* Desktop sidebar */}
+      {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-white md:flex">
         <div className="p-4">
           <Brandmark />
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-6">
-          <NavContent />
+          <ObjectsRail brandSlug={selectedBrandSlug} />
         </div>
       </aside>
 
       {/* Mobile drawer */}
-      {open && (
+      {drawerOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-ink/30 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
+            onClick={() => setDrawerOpen(false)}
           />
           <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white shadow-float">
             <div className="flex items-center justify-between p-4">
               <Brandmark />
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => setDrawerOpen(false)}
                 className="grid h-9 w-9 place-items-center rounded-lg border border-line text-ink"
                 aria-label="Close menu"
               >
@@ -96,7 +90,7 @@ export default function DashboardShell({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-3 pb-6">
-              <NavContent onNavigate={() => setOpen(false)} />
+              <ObjectsRail brandSlug={selectedBrandSlug} onNavigate={() => setDrawerOpen(false)} />
             </div>
           </div>
         </div>
@@ -107,10 +101,25 @@ export default function DashboardShell({
           brands={brands}
           selectedBrandId={selectedBrandId}
           email={email}
-          onMenu={() => setOpen(true)}
+          onMenu={() => setDrawerOpen(true)}
         />
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8 xl:pr-[404px]">
+          <Breadcrumbs />
+          {children}
+        </main>
       </div>
+
+      {/* Command palette — mounted once, triggered via ⌘K or palette:open event */}
+      <CommandPalette hasBrand={hasBrand} lockedFeatures={lockedFeatures} brandSlug={selectedBrandSlug} />
+
+      {/* Copilot dock — always present, always context-aware */}
+      <CopilotDock />
+
+      {/* Keyboard shortcuts + help overlay */}
+      <Shortcuts />
+
+      {/* Server-back the ObjectsRail Recent list (phase 3) */}
+      <RecentObjectsTracker />
     </div>
   );
 }

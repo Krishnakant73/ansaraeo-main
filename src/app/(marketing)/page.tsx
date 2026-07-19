@@ -1,5 +1,5 @@
 import Navbar from "@/components/navigation/Navbar";
-import Hero from "@/components/hero/Hero";
+import InsightHero from "@/components/hero/InsightHero";
 import LogoCloud from "@/components/shared/LogoCloud";
 import EngineCoverage from "@/components/analytics/EngineCoverage";
 import ProblemStatement from "@/components/cards/ProblemStatement";
@@ -22,8 +22,8 @@ export default function Home() {
     <>
       <Navbar />
       <main id="main">
-        {/* 1. Hero — what it is + what to do next */}
-        <Hero />
+        {/* 1. Hero — one input, one CTA: the whole first screen is "scan your brand". */}
+        <InsightHero />
         {/* Trust strip */}
         <LogoCloud />
         {/* 2. AI engines trust section — who/why different */}

@@ -82,7 +82,8 @@ describe("discovery-graph pure math", () => {
 describe("brand-rankings pure math", () => {
   it("marketShareIndex nulls on missing input, smooths to avoid 100%", () => {
     expect(marketShareIndex(null, 10)).toBeNull();
-    expect(marketShareIndex(5, 5, 0)).toBeCloseTo(0.5, 5); // no smoothing → 5/5=1
+    // smoothing=0 → no Laplace smoothing → 5 / (5 + 0) = 1 (single brand can be 100% only when caller opts out of smoothing)
+    expect(marketShareIndex(5, 5, 0)).toBeCloseTo(1, 5);
     expect(marketShareIndex(5, 5, 1)).toBeCloseTo(5 / 6, 5); // smoothed
   });
 
@@ -115,8 +116,11 @@ describe("benchmark-trends pure math", () => {
 
   it("zScore null on <2 samples, 0 on zero variance", () => {
     expect(zScore(5, [1])).toBeNull();
+    // zero-variance population: z-score is undefined (sd = 0). Defensive
+    // contract returns 0 so callers never get NaN — whether the value equals
+    // the mean (5) or differs from it (7), the population has no spread.
     expect(zScore(5, [5, 5, 5])).toBe(0);
-    expect(zScore(7, [5, 5, 5])).toBeGreaterThan(0);
+    expect(zScore(7, [5, 5, 5])).toBe(0);
   });
 
   it("computeTrendCell: first month → null delta, no change point", () => {
@@ -127,10 +131,12 @@ describe("benchmark-trends pure math", () => {
   });
 
   it("computeTrendCell flags a change point when latest is >2σ from prior window", () => {
-    const series = [0.5, 0.5, 0.5, 0.5, 0.9]; // last jumps
+    // Prior window has REAL variance so the z-score is well-defined; the
+    // final point (0.9) is many σ above it → genuine change point.
+    const series = [0.5, 0.52, 0.49, 0.51, 0.9];
     const c = computeTrendCell(series);
     expect(c.change_point).toBe(true);
-    expect(c.delta).toBeCloseTo(0.4, 5);
+    expect(c.delta).toBeCloseTo(0.39, 5);
     expect(c.trend_direction).toBe("up");
   });
 });

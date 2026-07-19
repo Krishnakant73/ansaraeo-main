@@ -1,23 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { getSelectedBrand } from "@/lib/selected-brand";
-import ConsistencyClient from "./ConsistencyClient";
 
-export default async function Page() {
-  const supabase = await createClient();
+export const dynamic = "force-dynamic";
+
+// Phase 2b redirect stub. Real page lives under /dashboard/b/[slug]/consistency.
+// This shell reads the selected-brand cookie so old bookmarks / internal links
+// keep working; if there's no brand yet, we land the user at onboarding.
+export default async function Redirect() {
   const { brand } = await getSelectedBrand();
-  if (!brand) return <p className="text-sm text-muted">Set up a brand first.</p>;
-
-  const { data: prompts } = await supabase
-    .from("prompts")
-    .select("id, text")
-    .eq("brand_id", brand.id)
-    .limit(100);
-
-  return (
-    <ConsistencyClient
-      brandId={brand.id}
-      prompts={prompts ?? []}
-      engines={["chatgpt", "perplexity", "gemini", "grok", "copilot"]}
-    />
-  );
+  if (!brand) redirect("/dashboard/welcome");
+  redirect(`/dashboard/b/${brand.slug}/consistency`);
 }
