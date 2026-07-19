@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function UpdatePasswordPage() {
   return (
     <div className="container-x flex min-h-screen items-center justify-center py-24">
       <div className="card w-full max-w-md p-8 hover:!translate-y-0 hover:!scale-100">
+        <Brandmark className="mb-6 justify-center" />
         <h1 className="text-2xl font-extrabold tracking-tight">Set a new password</h1>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">

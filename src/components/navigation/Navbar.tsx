@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 const LINKS = [
   { label: "Product", href: "/product" },
@@ -35,10 +36,7 @@ export default function Navbar() {
       )}
     >
       <nav className="container-x flex h-16 items-center justify-between" aria-label="Main">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-xs font-extrabold text-white">A</span>
-          AnsarAEO
-        </Link>
+        <Brandmark />
         <div className="hidden items-center gap-8 md:flex">
           {LINKS.map((l) => (
             <a key={l.label} href={l.href} className="text-sm font-medium text-muted transition-colors hover:text-ink">

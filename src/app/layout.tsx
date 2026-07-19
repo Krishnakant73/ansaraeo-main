@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import SmoothScroll from "@/components/layout/SmoothScroll";
 import CookieConsent from "@/components/shared/CookieConsent";
+import { cn } from "@/lib/utils";
+
+const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
+
+const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -55,7 +60,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={cn("font-mono", interHeading.variable, geistMono.variable)}>
       <body className="bg-white font-sans text-ink antialiased">
         <script
           type="application/ld+json"

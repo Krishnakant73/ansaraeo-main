@@ -1,202 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createRateLimiter } from "@/lib/rate-limit";
+import { parseJsonBody, visibilityCheckSchema } from "@/lib/validate";
+import { runVisibilityCheck, type EngineOutcome } from "@/lib/visibility-engine";
 
 // ============================================================
-// POST /api/visibility-check   (v2 — multi-engine)
+// POST /api/visibility-check
 // Body: { promptId: string }
 //
-// UPGRADE from v1: this now runs the prompt against every ACTIVE row in
-// the `engines` table (ChatGPT, Perplexity, Gemini by default — see
-// supabase/schema.sql seed data) instead of just ChatGPT, and stores one
-// visibility_runs row per engine. This is Part 3, Section 4's Phase 1
-// target ("ChatGPT, Perplexity, Gemini — Must-have").
+// Delegates to the canonical runVisibilityCheck() pipeline in
+// src/lib/visibility-engine.ts — the SAME function the nightly cron and
+// content generation use. This keeps a manual "Run check" click identical in
+// engine coverage and data quality to scheduled runs (every active engine,
+// deterministic mention reconciliation, perception capture). There is no
+// duplicated engine registry or classification here — that logic lives in the
+// lib as the single source of truth, so the two paths can never drift apart.
 //
-// If an engine's API key isn't set yet (e.g. you haven't added
-// GOOGLE_AI_API_KEY), that single engine fails gracefully and the others
-// still run — you get partial results instead of the whole call failing.
+// Per-engine failure isolation and graceful skips (missing API keys, no AI
+// Overview for a query) are handled inside runVisibilityCheck via
+// Promise.allSettled.
 // ============================================================
 
-type EngineResult = {
-  content: string;
-  citedUrls: string[];
-};
-
-async function callChatGPT(promptText: string): Promise<EngineResult> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: promptText }],
-    }),
-  });
-  if (!res.ok) throw new Error(`OpenAI error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return { content: data.choices[0].message.content as string, citedUrls: [] };
-}
-
-async function callPerplexity(promptText: string): Promise<EngineResult> {
-  const res = await fetch("https://api.perplexity.ai/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "sonar",
-      messages: [{ role: "user", content: promptText }],
-    }),
-  });
-  if (!res.ok) throw new Error(`Perplexity error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return {
-    content: data.choices[0].message.content as string,
-    citedUrls: (data.citations as string[]) ?? [], // Perplexity returns real citations natively
-  };
-}
-
-async function callGemini(promptText: string): Promise<EngineResult> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }],
-      }),
-    }
-  );
-  if (!res.ok) throw new Error(`Gemini error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return { content: data.candidates[0].content.parts[0].text as string, citedUrls: [] };
-}
-
-// Registry mapping engine name (must match the `engines.name` column in
-// Supabase) to its calling function. Add DeepSeek/Claude/Grok here later
-// by adding one row (Part 3, Section 4's Phase 2/3 rollout).
-const ENGINE_CALLERS: Record<string, (promptText: string) => Promise<EngineResult>> = {
-  chatgpt: callChatGPT,
-  perplexity: callPerplexity,
-  gemini: callGemini,
-};
-
-// Cheap classification pass (Part 3, Section 3A) — same small model used
-// for every engine's response, since this is a simple extraction task,
-// not the "real" answer generation.
-async function classifyResponse(responseText: string, brandName: string) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You extract structured facts from an AI answer. Respond ONLY with JSON: " +
-            '{"brand_mentioned": boolean, "brand_position": number|null, "sentiment": "positive"|"neutral"|"negative", "cited_urls": string[]}. ' +
-            "brand_position is the 1-based rank if the answer lists multiple brands/products, else null. " +
-            "cited_urls is every URL/domain explicitly named in the text, else [].",
-        },
-        { role: "user", content: `Brand to check for: "${brandName}"\n\nAI answer text:\n${responseText}` },
-      ],
-    }),
-  });
-  if (!res.ok) throw new Error(`Classification error: ${res.status} ${await res.text()}`);
-  const data = await res.json();
-  return JSON.parse(data.choices[0].message.content) as {
-    brand_mentioned: boolean;
-    brand_position: number | null;
-    sentiment: "positive" | "neutral" | "negative";
-    cited_urls: string[];
-  };
-}
+const visibilityLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { promptId } = await request.json();
-    if (!promptId) {
-      return NextResponse.json({ error: "promptId is required" }, { status: 400 });
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      "anon";
+    const rl = visibilityLimiter(ip);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many requests — please slow down." },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
     }
 
-    const supabase = createServiceClient();
+    const parsed = await parseJsonBody(request, visibilityCheckSchema);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { promptId } = parsed.data;
 
-    const { data: prompt, error: promptError } = await supabase
-      .from("prompts")
-      .select("id, text, brand_id, brands(name, domain)")
-      .eq("id", promptId)
-      .single();
-
-    if (promptError || !prompt) {
-      return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+    let outcomes: EngineOutcome[];
+    try {
+      outcomes = await runVisibilityCheck(promptId);
+    } catch (err) {
+      const msg = (err as Error).message ?? "";
+      if (msg.includes("Prompt not found")) {
+        return NextResponse.json({ error: "Prompt not found" }, { status: 404 });
+      }
+      throw err;
     }
 
-    const brand = Array.isArray(prompt.brands) ? prompt.brands[0] : prompt.brands;
-    const brandName = brand?.name ?? "";
-    const brandDomain: string = brand?.domain ?? "";
-
-    const { data: engines } = await supabase.from("engines").select("id, name").eq("is_active", true);
-
-    const results = await Promise.allSettled(
-      (engines ?? []).map(async (engine) => {
-        const caller = ENGINE_CALLERS[engine.name];
-        if (!caller) throw new Error(`No caller implemented for engine "${engine.name}"`);
-
-        const { content, citedUrls } = await caller(prompt.text);
-        const classification = await classifyResponse(content, brandName);
-
-        // Merge URLs the engine returned natively (e.g. Perplexity) with
-        // URLs our classifier extracted from the text itself
-        const allCitedUrls = Array.from(new Set([...citedUrls, ...classification.cited_urls]));
-
-        const { data: run, error: runError } = await supabase
-          .from("visibility_runs")
-          .insert({
-            prompt_id: promptId,
-            engine_id: engine.id,
-            raw_response: content,
-            brand_mentioned: classification.brand_mentioned,
-            brand_position: classification.brand_position,
-            sentiment: classification.sentiment,
-          })
-          .select()
-          .single();
-
-        if (runError) throw runError;
-
-        if (allCitedUrls.length > 0) {
-          await supabase.from("citations").insert(
-            allCitedUrls.map((url) => ({
-              run_id: run.id,
-              cited_domain: url,
-              cited_url: url,
-              is_own_domain: brandDomain ? url.includes(brandDomain) : false,
-              is_competitor_domain: false,
-            }))
-          );
-        }
-
-        return { engine: engine.name, ...classification };
-      })
-    );
-
-    // Report per-engine success/failure instead of failing the whole
-    // request if e.g. only GOOGLE_AI_API_KEY is missing
-    const summary = results.map((r, i) => {
-      const engineName = engines?.[i]?.name ?? "unknown";
-      return r.status === "fulfilled"
-        ? { ...r.value, engine: engineName, success: true }
-        : { engine: engineName, success: false, error: (r.reason as Error).message };
+    // Map the canonical EngineOutcome[] to the response shape the Prompts
+    // manager and FirstRunCTA already render (engine / success / brand_mentioned / error).
+    const results = outcomes.map((o: EngineOutcome) => {
+      if (!o.success) return { engine: o.engine, success: false, error: o.error };
+      if ("skipped" in o) return { engine: o.engine, success: true };
+      return { engine: o.engine, success: true, brand_mentioned: o.brand_mentioned };
     });
 
-    return NextResponse.json({ success: true, results: summary });
+    return NextResponse.json({ success: true, results });
   } catch (err) {
     console.error("visibility-check error:", err);
     return NextResponse.json({ error: "Internal error running visibility check" }, { status: 500 });

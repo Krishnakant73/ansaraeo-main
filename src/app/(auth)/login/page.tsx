@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,6 +60,7 @@ export default function LoginPage() {
       </Link>
 
       <div className="card w-full max-w-md p-8 hover:!translate-y-0 hover:!scale-100">
+        <Brandmark className="mb-6 justify-center" />
         <h1 className="text-2xl font-extrabold tracking-tight">Welcome back</h1>
         <p className="mt-2 text-sm text-muted">Log in to your AnsarAEO dashboard.</p>
 

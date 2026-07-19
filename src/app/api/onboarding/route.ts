@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
     await supabase.from("competitors").insert({ brand_id: brand.id, name: competitor });
   }
 
-  // 3. Auto-generate + insert starter prompts (no LLM call needed — see starter-prompts.ts)
-  const starterPrompts = generateStarterPrompts({
+  // 3. Auto-generate + insert starter prompts (EN/HI from templates; other
+  //    Indian languages generated natively via the LLM when a key is present)
+  const starterPrompts = await generateStarterPrompts({
     industry,
     category,
     competitor,
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         brand_id: brand.id,
         text: p.text,
         language: p.language,
+        intent: p.intent,
       }))
     );
     if (promptsError) {

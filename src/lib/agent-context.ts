@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { buildHistoryContext } from "@/lib/history-agent-context";
 
 // ============================================================
 // This is the "grounding" layer described in Part 4, Tier 2 and
@@ -51,6 +52,9 @@ export async function buildBrandContext(brandId: string): Promise<string> {
   const mentionedRuns = runs?.filter((r) => r.brand_mentioned).length ?? 0;
   const visibilityScore = totalRuns > 0 ? Math.round((mentionedRuns / totalRuns) * 100) : null;
 
+  // Historical record (first mentions, competitor movers, lost citations, ...).
+  const historyContext = await buildHistoryContext(brandId);
+
   // Per-engine breakdown
   const engineStats: Record<string, { total: number; mentioned: number }> = {};
   for (const r of runs ?? []) {
@@ -92,5 +96,7 @@ TRACKED PROMPTS (${prompts?.length ?? 0} total): ${(prompts ?? []).map((p) => `"
 
 PROMPTS WHERE THE BRAND IS NEVER MENTIONED (biggest opportunities):
 ${missedPrompts.length > 0 ? missedPrompts.map((p) => `- "${p}"`).join("\n") : "None found — either no gaps, or not enough run data yet"}
+
+${historyContext}
 `.trim();
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 const COLS = [
   {
@@ -54,10 +55,7 @@ export default function Footer() {
     <footer id="footer" className="rounded-t-[28px] bg-[#171312] text-white">
       <div className="container-x grid grid-cols-2 gap-10 py-16 md:grid-cols-5 md:py-20">
         <div className="col-span-2 md:col-span-1">
-          <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-xs font-extrabold text-white">A</span>
-            AnsarAEO
-          </Link>
+          <Brandmark tone="light" />
           <p className="mt-4 text-sm leading-relaxed text-white/50">
             India-first AI search visibility. Built in India, priced in ₹.
           </p>

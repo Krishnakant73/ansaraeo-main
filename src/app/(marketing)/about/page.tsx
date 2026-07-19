@@ -45,7 +45,7 @@ export default function AboutPage() {
               <p className="mt-3 text-sm leading-relaxed text-muted">
                 Search is fragmenting. A growing share of buying decisions start with a question typed into an AI
                 assistant, not a Google search bar. Brands that are invisible in those answers are invisible to
-                the customer at the exact moment they're deciding what to buy.
+                the customer at the exact moment they&apos;re deciding what to buy.
               </p>
             </div>
           </div>
@@ -69,6 +69,42 @@ export default function AboutPage() {
                 <h3 className="font-semibold">India-first, not India-later</h3>
                 <p className="mt-2 text-sm text-muted">
                   Hindi and regional-language support from day one, not a future roadmap item.
+                </p>
+              </div>
+            </div>
+          </div>
+        </SectionWrapper>
+
+        <SectionWrapper className="py-20 md:py-28">
+          <div className="container-x mx-auto max-w-4xl">
+            <div className="text-center">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">Who it&rsquo;s for</p>
+              <h2 className="mx-auto mt-4 max-w-2xl text-2xl font-bold tracking-tight md:text-3xl">
+                From invisible in AI search to consistently recommended.
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-muted">
+                We built AnsarAEO for the teams who own discovery but can&rsquo;t yet see it.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-6 sm:grid-cols-3">
+              <div className="card p-6">
+                <h3 className="font-semibold">D2C &amp; ecommerce brands</h3>
+                <p className="mt-2 text-sm text-muted">
+                  Teams who need to know whether AI assistants recommend them over a rival — in English, Hindi and
+                  Hinglish.
+                </p>
+              </div>
+              <div className="card p-6">
+                <h3 className="font-semibold">Agencies &amp; consultants</h3>
+                <p className="mt-2 text-sm text-muted">
+                  Who report AI-search visibility to Indian clients and need proof, not vibes, to back their
+                  recommendations.
+                </p>
+              </div>
+              <div className="card p-6">
+                <h3 className="font-semibold">Local &amp; regional businesses</h3>
+                <p className="mt-2 text-sm text-muted">
+                  Brands whose buyers ask in Tamil, Bengali and regional languages — and get answered by AI first.
                 </p>
               </div>
             </div>

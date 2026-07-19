@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/dashboard/page-header";
 import SiteAuditClient from "./SiteAuditClient";
 
 export default async function SiteAuditPage() {
@@ -9,11 +10,17 @@ export default async function SiteAuditPage() {
 
   if (!brand) {
     return (
-      <div className="text-center">
-        <p className="text-sm text-muted">Set up a brand first.</p>
-        <Link href="/dashboard/onboarding" className="btn-primary mt-4 inline-flex">
-          Start setup
-        </Link>
+      <div>
+        <PageHeader
+          title="Site Audit"
+          subtitle="Checking your site for AI-bot crawlability, schema markup, and llms.txt"
+        />
+        <div className="empty">
+          <p className="text-sm text-muted">Set up a brand first.</p>
+          <Link href="/dashboard/onboarding" className="btn-primary mt-5">
+            Start setup
+          </Link>
+        </div>
       </div>
     );
   }
@@ -28,10 +35,10 @@ export default async function SiteAuditPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Site Audit — {brand.name}</h1>
-      <p className="mt-1 text-sm text-muted">
-        Checking {brand.domain} for AI-bot crawlability, schema markup, and llms.txt.
-      </p>
+      <PageHeader
+        title="Site Audit"
+        subtitle={`Checking ${brand.domain} for AI-bot crawlability, schema markup, and llms.txt`}
+      />
       <div className="mt-6">
         <SiteAuditClient brandId={brand.id} latestAudit={latestAudit ?? null} />
       </div>

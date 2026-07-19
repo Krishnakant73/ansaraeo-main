@@ -1,0 +1,11 @@
+• == SETUP: seed sample brand + benchmark + simulated scan ==
+• Seeded brand "Zorastra Wellness (sample)" (7080e523) under org 139031b0
+• Simulated scan: 2 visibility_runs (1 mentioned + citations + history), 1 unmentioned
+• Benchmark: published industry p50 aggregates + brand snapshot (below p50 to create gaps)
+• generateOpportunities -> 4 open opportunity(ies); picked citation_gap (597b8107)
+• decomposeOpportunity(citation_gap) -> [content, approve, deploy, verify]
+• acceptOpportunity -> mission 867f7109 + 4 tasks (verify 915f191f, deploy a40b22ea); opportunity now acknowledged
+• State machine: non-deploy tasks -> done; deploy blocked while approval pending, unblocked after approve(); illegal transitions rejected; mission -> completed
+• verifyTask PASSED: citation_rate current=0.6 >= target=0.55 (delta 0.4); verify task done; notification emitted
+• History: 1 observation(s) + 1 event(s) recorded for sample brand
+• == END STATE: sample brand "Zorastra Wellness (sample)" retained (1) — mirrors a real customer journey =="

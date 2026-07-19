@@ -2,17 +2,24 @@ import Razorpay from "razorpay";
 
 // Server-only Razorpay instance. Never import this into a client component —
 // key_secret must never reach the browser.
-// Lazy-initialised so the build doesn't crash when env vars are absent.
+//
+// FIX (found via a real `next build` failure): the client used to be
+// created eagerly at module load time (`export const razorpay = new
+// Razorpay(...)`). Next.js evaluates API route modules during its build-
+// time "page data collection" step, which meant `next build` itself
+// failed with "key_id or oauthToken is mandatory" any time
+// RAZORPAY_KEY_ID/SECRET weren't present in the build environment — for
+// example in a CI pipeline before secrets are configured. Lazy-
+// initializing via a function called only when actually handling a
+// request fixes this: the build no longer needs live payment credentials
+// just to compile.
 let _razorpay: Razorpay | null = null;
 
 export function getRazorpay(): Razorpay {
   if (!_razorpay) {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new Error("RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set");
-    }
     _razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: process.env.RAZORPAY_KEY_ID!,
+      key_secret: process.env.RAZORPAY_KEY_SECRET!,
     });
   }
   return _razorpay;

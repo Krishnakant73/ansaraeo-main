@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Bot, Send, Sparkles, User } from "lucide-react";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -49,10 +50,10 @@ export default function AgentPage() {
 
   return (
     <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-3xl flex-col">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Agent</h1>
-        <p className="mt-1 text-sm text-muted">Ask anything about your visibility data — answers are grounded in your real numbers.</p>
-      </div>
+      <PageHeader
+        title="Agent"
+        subtitle="Ask anything about your visibility data — answers are grounded in your real numbers."
+      />
 
       <div className="mt-6 flex-1 overflow-y-auto rounded-2xl border border-line bg-white p-6">
         {messages.length === 0 && (

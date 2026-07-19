@@ -3,11 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { INDUSTRIES } from "@/lib/starter-prompts";
+import { INDIAN_LANGUAGES } from "@/lib/languages";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillNote, setAutofillNote] = useState<string | null>(null);
+  const [autofillConfidence, setAutofillConfidence] = useState<"high" | "low" | null>(null);
   const [form, setForm] = useState({
     brandName: "",
     domain: "",
@@ -25,6 +30,44 @@ export default function OnboardingPage() {
         ? f.languages.filter((l) => l !== lang)
         : [...f.languages, lang],
     }));
+  }
+
+  async function handleAutofill() {
+    const domain = form.domain.trim();
+    if (!domain) return;
+    setAutofilling(true);
+    setAutofillNote(null);
+    setAutofillConfidence(null);
+    try {
+      const res = await fetch("/api/onboarding/autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAutofillNote(data.error ?? "Autofill unavailable right now.");
+        return;
+      }
+      // Honesty: only fill fields the user hasn't already typed, and leave
+      // everything editable for review before submit.
+      setForm((f) => ({
+        ...f,
+        brandName: f.brandName || data.companyName || "",
+        category: f.category || data.suggestedCategory || "",
+        competitor: f.competitor || (data.suggestedCompetitors?.[0] ?? ""),
+      }));
+      setAutofillConfidence(data.confidence ?? "low");
+      setAutofillNote(
+        data.confidence === "low"
+          ? "We couldn't confidently identify this domain — please review and complete the fields."
+          : "Prefilled from your domain. Review and edit before continuing."
+      );
+    } catch {
+      setAutofillNote("Autofill failed — you can fill the fields manually.");
+    } finally {
+      setAutofilling(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,6 +94,7 @@ export default function OnboardingPage() {
   return (
     <div className="container-x flex min-h-screen items-center justify-center py-24">
       <div className="card w-full max-w-xl p-8 hover:!translate-y-0 hover:!scale-100">
+        <Brandmark className="mb-6 justify-center" />
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Step 1 of 1</p>
         <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Set up your first brand</h1>
         <p className="mt-2 text-sm text-muted">
@@ -74,11 +118,31 @@ export default function OnboardingPage() {
               <input
                 required
                 value={form.domain}
-                onChange={(e) => setForm({ ...form, domain: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, domain: e.target.value });
+                  setAutofillNote(null);
+                  setAutofillConfidence(null);
+                }}
                 className="mt-1.5 w-full rounded-xl border border-line px-4 py-2.5 text-sm outline-none focus:border-accent"
                 placeholder="lumora.com"
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleAutofill}
+              disabled={autofilling || !form.domain.trim()}
+              className="rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent disabled:opacity-60"
+            >
+              {autofilling ? "Looking up…" : "✨ Autofill from domain"}
+            </button>
+            {autofillNote && (
+              <p className={`text-xs ${autofillConfidence === "low" ? "text-amber-600" : "text-muted"}`}>
+                {autofillNote}
+              </p>
+            )}
           </div>
 
           <div>
@@ -132,22 +196,19 @@ export default function OnboardingPage() {
 
           <div>
             <label className="text-sm font-medium">Track prompts in</label>
-            <div className="mt-2 flex gap-2">
-              {[
-                { value: "en", label: "English" },
-                { value: "hi", label: "Hindi" },
-              ].map((lang) => (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {INDIAN_LANGUAGES.map((lang) => (
                 <button
-                  key={lang.value}
+                  key={lang.code}
                   type="button"
-                  onClick={() => toggleLanguage(lang.value)}
+                  onClick={() => toggleLanguage(lang.code)}
                   className={
-                    form.languages.includes(lang.value)
+                    form.languages.includes(lang.code)
                       ? "rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-white"
                       : "rounded-full border border-line px-4 py-1.5 text-xs font-medium text-muted"
                   }
                 >
-                  {lang.label}
+                  {lang.name}
                 </button>
               ))}
             </div>

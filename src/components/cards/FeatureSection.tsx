@@ -1,99 +1,78 @@
 import Link from "next/link";
-import { ArrowRight, Bell, IndianRupee, Languages, Wand2 } from "lucide-react";
+import { ArrowRight, Activity, Compass, LineChart, Sparkles } from "lucide-react";
 import SectionWrapper from "@/components/layout/SectionWrapper";
 
-const POINTS = [
+const PILLARS = [
   {
-    icon: Languages,
-    title: "Native Hindi & Hinglish tracking",
-    desc: "Prompts written and evaluated in Hindi, Hinglish, Tamil and Bengali — not machine-translated English.",
+    icon: Activity,
+    eyebrow: "Monitor",
+    title: "Know the moment AI talks about you.",
+    desc: "AnsarAEO runs your category's real questions across every answer engine — in your customers' languages — and records whether AI names you, misses you, or cites a rival. Visibility, citations, and prompt coverage, watched continuously.",
+    items: ["AI visibility & citation tracking", "Prompt monitoring across 6 engines", "AI index monitoring — llms.txt & schema"],
   },
   {
-    icon: Wand2,
-    title: "Auto-Fix, not just advice",
-    desc: "We draft the schema markup and content, then push it to WordPress or Shopify in one click.",
+    icon: Compass,
+    eyebrow: "Understand",
+    title: "Know why AI trusts someone else.",
+    desc: "When a competitor wins the mention, we show you the sources it cited and the words it used — then measure the gap between how you want to be seen and how AI actually sees you.",
+    items: ["Competitor intelligence", "AI recommendation analysis", "Brand perception vs. positioning"],
   },
   {
-    icon: IndianRupee,
-    title: "Revenue attribution built-in",
-    desc: "AI search to sessions to orders to revenue in one native view, with GA4, Shopify and Razorpay.",
+    icon: Sparkles,
+    eyebrow: "Improve",
+    title: "Become the answer, not the afterthought.",
+    desc: "Turn insight into action. AnsarAEO drafts the schema, llms.txt, and content that earn the citation — and ships it to your CMS in one click. No new writer, no agency retainer.",
+    items: ["Content optimization", "GEO & technical audits", "One-click AI index generation"],
   },
-];
-
-const HINDI_PROMPTS = [
-  { label: "sabse accha protein powder", v: 74 },
-  { label: "best kurta brands online", v: 61 },
-  { label: "ayurvedic face wash kaunsa le", v: 48 },
+  {
+    icon: LineChart,
+    eyebrow: "Measure",
+    title: "Tie AI visibility to revenue.",
+    desc: "Watch share of voice and mention rate climb over time — and connect AI discovery to the sessions, orders, and revenue it actually drives.",
+    items: ["Analytics & reporting", "Revenue attribution", "Share-of-voice trends"],
+  },
 ];
 
 export default function FeatureSection() {
   return (
     <SectionWrapper id="features" className="py-24 md:py-40">
-      <div className="container-x grid items-center gap-16 lg:grid-cols-2">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">Why AnsarAEO</p>
+      <div className="container-x">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">What AnsarAEO does</p>
           <h2 className="mt-4 text-3xl font-extrabold leading-[1.1] tracking-tight md:text-5xl">
-            See it. Understand it. Fix it.
+            Four moves, from invisible to recommended.
           </h2>
-          <p className="mt-5 max-w-lg text-muted md:text-lg">
-            Global tools stop at charts. AnsarAEO closes the loop — from spotting a visibility gap to shipping the fix
-            that wins the mention.
+          <p className="mt-5 max-w-xl text-muted md:text-lg">
+            Monitor what AI says about you. Understand why it chooses rivals. Improve the answer. Measure the
+            impact — in Hindi, Hinglish, Tamil, Bengali and Marathi, the way your customers actually ask.
           </p>
-          <ul className="mt-10 space-y-7">
-            {POINTS.map((p) => (
-              <li key={p.title} className="flex gap-4">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
+        </div>
+        <div className="mx-auto mt-16 grid max-w-6xl gap-6 md:grid-cols-2">
+          {PILLARS.map((p) => (
+            <div key={p.eyebrow} className="card p-8">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent">
                   <p.icon className="h-5 w-5" aria-hidden />
                 </span>
-                <div>
-                  <h3 className="font-semibold">{p.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{p.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <Link href="/signup" className="btn-secondary mt-10">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{p.eyebrow}</span>
+              </div>
+              <h3 className="mt-6 text-xl font-bold tracking-tight">{p.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{p.desc}</p>
+              <ul className="mt-6 space-y-2.5">
+                {p.items.map((it) => (
+                  <li key={it} className="flex gap-2.5 text-sm text-ink/80">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <Link href="/signup" className="btn-secondary">
             Explore the platform <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
-        </div>
-        <div className="relative">
-          <div className="card p-6 md:p-8">
-            <p className="text-xs font-medium text-muted">Hindi prompt performance</p>
-            <div className="mt-4 space-y-4">
-              {HINDI_PROMPTS.map((r) => (
-                <div key={r.label}>
-                  <div className="flex items-center justify-between text-xs font-medium">
-                    <span>“{r.label}”</span>
-                    <span className="text-accent">{r.v}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-grid">
-                    <div className="h-full rounded-full bg-accent" style={{ width: `${r.v}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-5 text-[11px] text-muted">Last checked 4 hours ago via live model queries</p>
-          </div>
-          <div className="card absolute -left-4 -top-8 hidden w-64 items-start gap-3 p-4 sm:flex">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
-              <Bell className="h-4 w-4" aria-hidden />
-            </span>
-            <div>
-              <p className="text-xs font-semibold">Visibility alert</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
-                You gained a citation on Perplexity for “best d2c skincare”.
-              </p>
-            </div>
-          </div>
-          <div className="card absolute -bottom-10 -right-4 hidden w-60 p-4 sm:block">
-            <p className="text-xs font-semibold">Auto-Fix ready</p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
-              FAQ schema drafted for /pricing — review &amp; push to Shopify.
-            </p>
-            <span className="mt-2 inline-block rounded-full bg-accent px-3 py-1 text-[10px] font-semibold text-white">
-              1-click deploy
-            </span>
-          </div>
         </div>
       </div>
     </SectionWrapper>

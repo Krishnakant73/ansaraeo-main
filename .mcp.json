@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ansar-aeo": {
+      "command": "node",
+      "args": [
+        "mcp-server/dist/index.js"
+      ]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    }
+  }
+}

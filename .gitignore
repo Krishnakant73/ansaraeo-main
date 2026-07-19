@@ -50,3 +50,6 @@ supabase/.branches/
 # Misc
 *.pem
 .turbo
+
+# gstack skill suite repo (nested .git — kept local, not committed)
+.claude/skills/gstack

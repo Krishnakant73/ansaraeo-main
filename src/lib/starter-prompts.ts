@@ -2,11 +2,16 @@
 // Ref: 01-master-roadmap.md Phase 1 — "auto-suggest 20-30 starter prompts"
 // and 05-ui-ux-design-system.md Screen A (Onboarding Wizard).
 //
-// This is intentionally template-based (not LLM-generated) so onboarding
-// works even before you've wired up any LLM API keys. Once OPENAI_API_KEY
-// is live, you can upgrade generateStarterPrompts() to call an LLM instead
-// for smarter, less generic suggestions — the function signature below is
-// designed so that swap doesn't require changing any calling code.
+// EN/HI prompts come from built-in native templates (no API key needed).
+// For every other Indian language we call the LLM (gpt-4o-mini) to produce
+// native-language prompts — this is the upgrade path the original comment
+// anticipated ("once OPENAI_API_KEY is live, you can upgrade ... to call an
+// LLM"). The function is async and its signature is stable, so the onboarding
+// route only needed to `await` it. We never machine-translate: EN/HI are
+// hand-written templates, everything else is generated natively by the model.
+
+import { languageName } from "./languages";
+import { inferIntentFromText } from "./intent";
 
 type IndustryKey =
   | "d2c_fashion"
@@ -99,25 +104,80 @@ const TEMPLATES: Record<IndustryKey, { en: string[]; hi: string[] }> = {
   },
 };
 
-export function generateStarterPrompts(params: {
+async function generateViaLLM(
+  params: { industry: IndustryKey; category: string; competitor?: string; city?: string },
+  lang: string
+): Promise<string[]> {
+  if (!process.env.OPENAI_API_KEY) return [];
+  try {
+    const native = languageName(lang);
+    const industryLabel = INDUSTRIES.find((i) => i.value === params.industry)?.label ?? params.industry;
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You generate realistic, native-language search queries that people in India ask AI answer engines (ChatGPT, Perplexity, Gemini). Respond ONLY as JSON: {\"prompts\": string[]}.",
+          },
+          {
+            role: "user",
+            content: `Generate 5 short, natural ${native}-language search queries a customer would ask an AI assistant about "${params.category}"${
+              params.competitor ? `, comparing it to ${params.competitor}` : ""
+            }${params.city ? `, in ${params.city}` : ""}. Industry: ${industryLabel}. Write them exactly as a native ${native} speaker would type them — not translated English. Return ONLY the JSON object.`,
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    return Array.isArray(parsed?.prompts) ? parsed.prompts.slice(0, 6).map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function generateStarterPrompts(params: {
   industry: IndustryKey;
   category: string; // e.g. "sneakers", "protein powder" — user types this in onboarding
   competitor?: string;
   city?: string;
-  languages: ("en" | "hi")[];
-}): { text: string; language: "en" | "hi" }[] {
+  languages: string[];
+}): Promise<{ text: string; language: string; intent: string }[]> {
   const set = TEMPLATES[params.industry] ?? TEMPLATES.other;
-  const prompts: { text: string; language: "en" | "hi" }[] = [];
+  const prompts: { text: string; language: string; intent: string }[] = [];
 
+  // EN/HI: built-in native templates (no API key needed).
+  // Other languages: generate natively via the LLM when a key is present.
+  const llmLangs: string[] = [];
   for (const lang of params.languages) {
-    const list = lang === "en" ? set.en : set.hi;
-    for (const template of list) {
-      const text = template
-        .replace("{category}", params.category)
-        .replace("{competitor}", params.competitor || "other brands")
-        .replace("{city}", params.city || "India");
-      prompts.push({ text, language: lang });
+    if (lang === "en" || lang === "hi") {
+      const list = lang === "en" ? set.en : set.hi;
+      for (const template of list) {
+        const text = template
+          .replace("{category}", params.category)
+          .replace("{competitor}", params.competitor || "other brands")
+          .replace("{city}", params.city || "India");
+        prompts.push({ text, language: lang, intent: inferIntentFromText(text) });
+      }
+    } else if (process.env.OPENAI_API_KEY) {
+      llmLangs.push(lang);
     }
+    // Languages without a template AND without an API key yield no starter
+    // prompts (consistent with empty-template industries like `saas.hi`).
   }
+
+  if (llmLangs.length) {
+    const generated = await Promise.all(llmLangs.map((l) => generateViaLLM(params, l)));
+    generated.forEach((list, i) => {
+      for (const text of list) prompts.push({ text, language: llmLangs[i], intent: inferIntentFromText(text) });
+    });
+  }
+
   return prompts;
 }

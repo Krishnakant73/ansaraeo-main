@@ -30,4 +30,10 @@ drop table if exists site_audits cascade;
 drop table if exists automation_actions cascade;
 drop table if exists integrations cascade;
 
+-- Benchmark warehouse (created by migration_019). benchmark_brand_snapshots is
+-- dropped via the brands cascade above; benchmark_aggregates has no FK so drop it
+-- explicitly. Both are recreated when migration_019 runs after schema.sql.
+drop table if exists benchmark_aggregates cascade;
+drop table if exists benchmark_brand_snapshots cascade;
+
 -- Now go run schema.sql (the fixed version) in a fresh query.

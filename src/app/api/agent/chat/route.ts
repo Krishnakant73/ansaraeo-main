@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { buildBrandContext } from "@/lib/agent-context";
+import { createRateLimiter } from "@/lib/rate-limit";
+import { parseJsonBody, agentChatSchema } from "@/lib/validate";
 
 // ============================================================
 // POST /api/agent/chat
@@ -27,6 +29,8 @@ async function callChatGPT(systemPrompt: string, history: { role: string; conten
   return data.choices[0].message.content as string;
 }
 
+const agentChatLimiter = createRateLimiter({ windowMs: 60_000, max: 30 });
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -35,8 +39,9 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-    const { message, conversationId } = await request.json();
-    if (!message) return NextResponse.json({ error: "message is required" }, { status: 400 });
+    const parsed = await parseJsonBody(request, agentChatSchema);
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    const { message, conversationId } = parsed.data;
 
     const { data: brands } = await supabase.from("brands").select("id").limit(1);
     const brand = brands?.[0];

@@ -8,8 +8,12 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   {
+    q: "What is AI Brand Intelligence?",
+    a: "AI Brand Intelligence is how well AI systems understand, trust, and recommend your brand. AnsarAEO is the platform that measures it across every answer engine and turns the gaps into fixes you can actually ship.",
+  },
+  {
     q: "What exactly does AnsarAEO track?",
-    a: "We run your prompts daily across ChatGPT, Perplexity and Gemini, then record whether your brand is mentioned, in what position, with what sentiment, and which sources get cited — all trended over time.",
+    a: "We run your category's real questions across ChatGPT, Gemini, Perplexity, Google AI Overviews, Grok and Copilot — then record whether your brand is mentioned, in what position, with what sentiment, and which sources get cited. All trended over time.",
   },
   {
     q: "Do you really support Hindi and Hinglish?",
@@ -17,11 +21,7 @@ const ITEMS = [
   },
   {
     q: "How much does it cost?",
-    a: "SMB plans start at ₹1,999/mo with real value — 25-50 prompts, 3 engines and weekly reports. Agency plans add white-label reports and multi-client workspaces.",
-  },
-  {
-    q: "Can I cancel anytime?",
-    a: "Yes, with one click from Billing. Cancellation is immediate, proration is clear, and your card is removed on request. No dark patterns.",
+    a: "Plans start at ₹1,999/mo with real value — prompts, engines and weekly reports included. Upgrade as you grow; no card required to start.",
   },
   {
     q: "How fresh is the data?",
@@ -29,7 +29,7 @@ const ITEMS = [
   },
   {
     q: "Does it fit my existing stack?",
-    a: "Native integrations for Shopify, WordPress, WooCommerce, GA4 and Razorpay, plus WhatsApp and Slack alerts for visibility drops.",
+    a: "Native integrations for Shopify, WordPress, WooCommerce, GA4 and Razorpay, plus WhatsApp and Slack alerts the moment your visibility drops.",
   },
 ];
 

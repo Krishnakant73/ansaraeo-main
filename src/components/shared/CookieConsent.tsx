@@ -1,20 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 const STORAGE_KEY = "ansaraeo_cookie_consent"; // "accepted" | "declined"
 
 export default function CookieConsent() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // Only runs in the browser, after hydration — safe localStorage use
-    // (this is a real app, not a Claude Artifact — localStorage is fine here).
-    const existing = window.localStorage.getItem(STORAGE_KEY);
-    if (!existing) setVisible(true);
-  }, []);
+  const [visible, setVisible] = useState(() => {
+    // Lazy initializer runs once; guard for SSR where `window` is undefined.
+    if (typeof window === "undefined") return false;
+    return !window.localStorage.getItem(STORAGE_KEY);
+  });
 
   function respond(choice: "accepted" | "declined") {
     window.localStorage.setItem(STORAGE_KEY, choice);

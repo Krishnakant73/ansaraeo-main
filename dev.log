@@ -1,0 +1,35 @@
+
+> ansaraeo-web@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.3:3000
+- Environments: .env.local
+✓ Ready in 4.2s
+⚠ Slow filesystem detected. The benchmark took 376ms. If D:\hy3 model\AEO\.next/dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+○ Compiling proxy ...
+
+○ Compiling / ...
+✓ Finished writing to filesystem cache in 7.0min
+✓ Finished filesystem cache database compaction in 15.9min
+✓ Finished filesystem cache database compaction in 15.5min
+✓ Finished writing to filesystem cache in 2.9min
+✓ Finished writing to filesystem cache in 116s
+✓ Finished writing to filesystem cache in 36.0s
+✓ Finished writing to filesystem cache in 42s
+✓ Finished writing to filesystem cache in 54s
+✓ Finished writing to filesystem cache in 75s
+✓ Finished writing to filesystem cache in 54s
+✓ Finished writing to filesystem cache in 77s
+✓ Finished writing to filesystem cache in 47s
+✓ Finished writing to filesystem cache in 51s
+✓ Finished writing to filesystem cache in 10.6s
+✓ Finished writing to filesystem cache in 39.7s
+✓ Finished writing to filesystem cache in 16.7s
+✓ Finished writing to filesystem cache in 49s
+✓ Finished writing to filesystem cache in 43s
+✓ Finished writing to filesystem cache in 56s
+✓ Finished writing to filesystem cache in 36.7s
+✓ Finished writing to filesystem cache in 66s

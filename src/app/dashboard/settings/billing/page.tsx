@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_PRICING } from "@/lib/razorpay";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Panel } from "@/components/dashboard/panel";
 import CheckoutButton from "./CheckoutButton";
 
 function inr(n: number) {
@@ -42,7 +44,7 @@ export default async function BillingPage({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-extrabold tracking-tight">Billing</h1>
+      <PageHeader title="Billing" />
 
       {success === "1" && (
         <p className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">
@@ -51,10 +53,10 @@ export default async function BillingPage({
         </p>
       )}
 
-      <div className="card mt-6 p-6">
+      <Panel title="Current plan">
         <p className="text-xs font-medium text-muted">Current plan</p>
         <p className="mt-1 text-2xl font-bold capitalize">{currentPlan}</p>
-      </div>
+      </Panel>
 
       <h2 className="mt-10 text-lg font-bold tracking-tight">Upgrade</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -74,7 +76,7 @@ export default async function BillingPage({
       </div>
 
       <h2 className="mt-10 text-lg font-bold tracking-tight">Payment history</h2>
-      <div className="card mt-4 overflow-hidden">
+      <Panel className="mt-4" bodyClassName="overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
           <thead className="bg-surface text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -102,7 +104,7 @@ export default async function BillingPage({
             )}
           </tbody>
         </table>
-      </div>
+      </Panel>
 
       <p className="mt-6 text-xs text-muted">
         Need to cancel or have a billing issue? Email{" "}

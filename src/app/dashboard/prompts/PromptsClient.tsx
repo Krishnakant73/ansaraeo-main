@@ -2,17 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { INDIAN_LANGUAGES, languageName } from "@/lib/languages";
+import { INTENTS, intentLabel } from "@/lib/intent";
+import { Panel } from "@/components/dashboard/panel";
 
-type Prompt = { id: string; text: string; language: string };
+type Prompt = { id: string; text: string; language: string; intent?: string | null; priority?: boolean };
 type EngineResult = { engine: string; success: boolean; brand_mentioned?: boolean; error?: string };
 
 export default function PromptsClient({ brandId, prompts }: { brandId: string; prompts: Prompt[] }) {
   const router = useRouter();
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("en");
+  const [intent, setIntent] = useState("");
   const [adding, setAdding] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [results, setResults] = useState<EngineResult[] | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function togglePriority(p: Prompt) {
+    setTogglingId(p.id);
+    const res = await fetch("/api/prompts/priority", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ promptId: p.id, priority: !p.priority }),
+    });
+    setTogglingId(null);
+    if (res.ok) router.refresh();
+  }
 
   async function addPrompt(e: React.FormEvent) {
     e.preventDefault();
@@ -20,11 +36,12 @@ export default function PromptsClient({ brandId, prompts }: { brandId: string; p
     const res = await fetch("/api/prompts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brandId, text, language }),
+      body: JSON.stringify({ brandId, text, language, intent: intent || undefined }),
     });
     setAdding(false);
     if (res.ok) {
       setText("");
+      setIntent("");
       router.refresh();
     }
   }
@@ -48,86 +65,128 @@ export default function PromptsClient({ brandId, prompts }: { brandId: string; p
   }
 
   return (
-    <div>
-      <form onSubmit={addPrompt} className="card flex flex-wrap items-end gap-3 p-5">
-        <div className="flex-1 min-w-[240px]">
-          <label className="text-xs font-medium text-muted">New prompt to track</label>
-          <input
-            required
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-line px-4 py-2.5 text-sm outline-none focus:border-accent"
-            placeholder="best face wash for oily skin india"
-          />
-        </div>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="rounded-xl border border-line px-3 py-2.5 text-sm outline-none focus:border-accent"
-        >
-          <option value="en">English</option>
-          <option value="hi">Hindi</option>
-        </select>
-        <button type="submit" disabled={adding} className="btn-primary !h-11 disabled:opacity-60">
-          {adding ? "Adding…" : "Add prompt"}
-        </button>
-      </form>
-
-      {results && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {results.map((r) => (
-            <span
-              key={r.engine}
-              className={
-                r.success
-                  ? r.brand_mentioned
-                    ? "rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600"
-                    : "rounded-full bg-grid px-3 py-1 text-xs font-semibold text-muted"
-                  : "rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-500"
-              }
-              title={r.error}
-            >
-              {r.engine}: {r.success ? (r.brand_mentioned ? "mentioned ✓" : "not mentioned") : `failed (${r.error})`}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="card mt-4 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-surface text-xs uppercase tracking-wide text-muted">
-            <tr>
-              <th className="px-5 py-3 font-medium">Prompt</th>
-              <th className="px-5 py-3 font-medium">Lang</th>
-              <th className="px-5 py-3 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prompts.map((p) => (
-              <tr key={p.id} className="border-t border-line/60">
-                <td className="px-5 py-3">{p.text}</td>
-                <td className="px-5 py-3 uppercase text-xs font-semibold text-muted">{p.language}</td>
-                <td className="px-5 py-3">
-                  <button
-                    onClick={() => runCheck(p.id)}
-                    disabled={runningId === p.id}
-                    className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-accent hover:border-accent disabled:opacity-60"
-                  >
-                    {runningId === p.id ? "Running all engines…" : "Run check now"}
-                  </button>
-                </td>
-              </tr>
+    <div className="space-y-6">
+      <Panel title="Add a prompt" description="Then run a live check across every engine.">
+        {results && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {results.map((r) => (
+              <span
+                key={r.engine}
+                title={r.error}
+                className={
+                  r.success
+                    ? r.brand_mentioned
+                      ? "chip chip-accent"
+                      : "chip"
+                    : "chip border-rose-200 bg-rose-50 text-rose-600"
+                }
+              >
+                {r.engine}: {r.success ? (r.brand_mentioned ? "mentioned ✓" : "not mentioned") : `failed (${r.error})`}
+              </span>
             ))}
-            {prompts.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-5 py-6 text-center text-muted">
-                  No prompts yet — add your first one above.
-                </td>
+          </div>
+        )}
+        <form onSubmit={addPrompt} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[240px] flex-1">
+            <label className="section-label">New prompt to track</label>
+            <input
+              required
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-line bg-white px-4 py-2.5 text-sm outline-none focus:border-accent"
+              placeholder="best face wash for oily skin india"
+            />
+          </div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+          >
+            {INDIAN_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={intent}
+            onChange={(e) => setIntent(e.target.value)}
+            className="rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-accent"
+            title="Intent (funnel stage)"
+          >
+            <option value="">Intent: auto</option>
+            {INTENTS.map((i) => (
+              <option key={i.key} value={i.key}>
+                {i.label}
+              </option>
+            ))}
+          </select>
+          <button type="submit" disabled={adding} className="btn-primary !h-11 disabled:opacity-60">
+            {adding ? "Adding…" : "Add prompt"}
+          </button>
+        </form>
+      </Panel>
+
+      <Panel
+        title="Tracked prompts"
+        description={`${prompts.length} prompt${prompts.length === 1 ? "" : "s"}`}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line text-[11px] uppercase tracking-wider text-muted">
+                <th className="px-1 py-3 font-semibold">Prompt</th>
+                <th className="px-1 py-3 font-semibold">Lang</th>
+                <th className="px-1 py-3 font-semibold">Intent</th>
+                <th className="px-1 py-3 text-right font-semibold">Action</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {prompts.map((p) => (
+                <tr key={p.id} className="border-b border-line/60 transition-colors hover:bg-surface">
+                  <td className="px-1 py-3">{p.text}</td>
+                  <td className="px-1 py-3 text-xs font-semibold uppercase text-muted">
+                    {languageName(p.language)}
+                  </td>
+                  <td className="px-1 py-3">
+                    <span className="chip">{intentLabel(p.intent)}</span>
+                  </td>
+                  <td className="px-1 py-3">
+                    <button
+                      onClick={() => togglePriority(p)}
+                      disabled={togglingId === p.id}
+                      title="Mark as a money prompt (counts toward shortlist share)"
+                      className={
+                        p.priority
+                          ? "chip chip-accent"
+                          : "chip border-line"
+                      }
+                    >
+                      {p.priority ? "★ Priority" : "☆ Priority"}
+                    </button>
+                  </td>
+                  <td className="px-1 py-3 text-right">
+                    <button
+                      onClick={() => runCheck(p.id)}
+                      disabled={runningId === p.id}
+                      className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-accent transition hover:border-accent disabled:opacity-60"
+                    >
+                      {runningId === p.id ? "Running…" : "Run check"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {prompts.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-1 py-10 text-center text-sm text-muted">
+                    No prompts yet — add your first one above.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 }

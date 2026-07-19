@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Brandmark } from "@/components/shared/Brandmark";
 
 export default function ForgotPasswordPage() {
   const supabase = createClient();
@@ -39,6 +40,7 @@ export default function ForgotPasswordPage() {
       </Link>
 
       <div className="card w-full max-w-md p-8 hover:!translate-y-0 hover:!scale-100">
+        <Brandmark className="mb-6 justify-center" />
         <h1 className="text-2xl font-extrabold tracking-tight">Reset your password</h1>
         <p className="mt-2 text-sm text-muted">We&apos;ll email you a link to set a new one.</p>
 

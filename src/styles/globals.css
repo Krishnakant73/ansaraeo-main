@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Keep the existing JS theme config (custom colors, fonts, shadows, animations)
+   working under Tailwind v4 via the @config bridge — no token rewrite needed. */
+@config "../../tailwind.config.ts";
 
 @layer base {
   html {
@@ -27,6 +29,27 @@
   .btn-secondary {
     @apply inline-flex h-12 items-center justify-center gap-2 rounded-full border border-line bg-white px-7 text-sm font-medium tracking-wide text-ink shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-ink/20 hover:shadow-card;
   }
+  .btn-sm {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-accent px-4 text-xs font-medium text-white transition-all hover:bg-accent-hover;
+  }
+  .btn-ghost {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-line bg-white px-4 text-xs font-medium text-ink transition-all hover:bg-surface;
+  }
+  .btn-success {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-4 text-xs font-medium text-white transition-all hover:bg-emerald-700;
+  }
+  .btn-xs {
+    @apply inline-flex h-7 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors;
+  }
+  .btn-xs-accent {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+  .btn-xs-ghost {
+    @apply border border-line bg-white text-ink hover:bg-surface;
+  }
+  .btn-xs-success {
+    @apply bg-emerald-600 text-white hover:bg-emerald-700;
+  }
   .card {
     @apply rounded-[20px] border border-line bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:scale-[1.01] hover:shadow-float;
   }
@@ -37,5 +60,54 @@
   .bg-dots-dark {
     background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
+  /* ── Redesign system (AnsarAEO SaaS shell) ── */
+  .panel {
+    @apply rounded-[20px] border border-line bg-white shadow-card;
+  }
+  .page-head {
+    @apply mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between;
+  }
+  .page-title {
+    @apply text-2xl font-extrabold tracking-tight text-ink;
+  }
+  .page-sub {
+    @apply mt-1 text-sm text-muted;
+  }
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted;
+  }
+  .nav-link {
+    @apply flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-ink;
+  }
+  .nav-link-active {
+    @apply bg-accent/10 text-accent;
+  }
+  .nav-group-label {
+    @apply px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted/70;
+  }
+  .kpi {
+    @apply rounded-[20px] border border-line bg-white p-5 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-float;
+  }
+  .kpi-value {
+    @apply mt-2 text-3xl font-extrabold tracking-tight text-ink;
+  }
+  .kpi-label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-0.5 text-xs font-semibold text-muted;
+  }
+  .chip-accent {
+    @apply border-accent/20 bg-accent/10 text-accent;
+  }
+  .empty {
+    @apply flex flex-col items-center justify-center rounded-[20px] border border-dashed border-line bg-surface/50 px-6 py-14 text-center;
+  }
+  .app-gradient {
+    background:
+      radial-gradient(60rem 60rem at 100% -10%, rgba(214, 106, 56, 0.06), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 110%, rgba(214, 106, 56, 0.05), transparent 55%);
   }
 }
