@@ -116,10 +116,20 @@ export default function CompetitorsManager({
                 >
                   ↗
                 </a>
-                <button onClick={() => respondTo(c.id, "confirm")} className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-white">
+                <button
+                  onClick={() => respondTo(c.id, "confirm")}
+                  aria-label={`Confirm ${c.name} as a competitor`}
+                  title="Confirm"
+                  className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-white"
+                >
                   <Check className="h-3 w-3" />
                 </button>
-                <button onClick={() => respondTo(c.id, "reject")} className="grid h-5 w-5 place-items-center rounded-full bg-red-400 text-white">
+                <button
+                  onClick={() => respondTo(c.id, "reject")}
+                  aria-label={`Reject ${c.name} as a competitor`}
+                  title="Reject"
+                  className="grid h-5 w-5 place-items-center rounded-full bg-red-400 text-white"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </div>

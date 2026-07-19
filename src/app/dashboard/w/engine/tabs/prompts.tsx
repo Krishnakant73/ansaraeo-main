@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import PromptHeatmap from "../features/PromptHeatmap";
 import type { Engine } from "@/lib/engine-workspace";
 
 // ============================================================
@@ -22,7 +23,14 @@ type Agg = {
   positions: number[];
 };
 
-export default async function PromptsBody({ engine }: { engine: Engine }) {
+export default async function PromptsBody({
+  engine,
+  searchParams,
+}: {
+  engine: Engine;
+  searchParams?: URLSearchParams;
+}) {
+  const view = (searchParams?.get("view") ?? "table") as "table" | "heatmap";
   const supabase = await createClient();
   const { data: prompts } = await supabase
     .from("prompts")
@@ -63,14 +71,43 @@ export default async function PromptsBody({ engine }: { engine: Engine }) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold text-ink">Prompts on {engine.displayName}</h2>
-        <p className="mt-1 text-sm text-muted">
-          Every tracked prompt scored on {engine.displayName}, sorted by mention rate ascending —
-          worst gaps first.
-        </p>
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Prompt coverage on {engine.displayName}</h2>
+          <p className="mt-1 text-sm text-muted">
+            {view === "heatmap"
+              ? `Mention rate per prompt × week for the last 8 weeks.`
+              : `Every tracked prompt scored on ${engine.displayName}, worst gaps first.`}
+          </p>
+        </div>
+        <nav aria-label="Prompt view" className="flex gap-1.5">
+          <Link
+            href={`/dashboard/w/engine/${engine.name}/prompts`}
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              view === "table"
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-white text-muted hover:border-accent/40 hover:text-ink"
+            }`}
+            aria-current={view === "table" ? "true" : undefined}
+          >
+            Table
+          </Link>
+          <Link
+            href={`/dashboard/w/engine/${engine.name}/prompts?view=heatmap`}
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              view === "heatmap"
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-white text-muted hover:border-accent/40 hover:text-ink"
+            }`}
+            aria-current={view === "heatmap" ? "true" : undefined}
+          >
+            Heatmap
+          </Link>
+        </nav>
       </div>
-      {sorted.length === 0 ? (
+      {view === "heatmap" ? (
+        <PromptHeatmap engine={engine} />
+      ) : sorted.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-white p-8 text-center">
           <p className="text-sm text-ink">No scored runs on {engine.displayName} yet.</p>
           <p className="mt-1 text-xs text-muted">Run a scan on any prompt to populate this view.</p>

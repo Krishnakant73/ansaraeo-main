@@ -47,6 +47,18 @@
     {
       "path": "/api/cron/monthly-summary",
       "schedule": "0 9 1 * *"
+    },
+    {
+      "path": "/api/cron/competitor-snapshots",
+      "schedule": "45 22 * * *"
+    },
+    {
+      "path": "/api/cron/engine-snapshots",
+      "schedule": "50 22 * * *"
+    },
+    {
+      "path": "/api/cron/engine-change-alerts",
+      "schedule": "7 6 * * *"
     }
   ]
 }

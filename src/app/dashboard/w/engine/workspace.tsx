@@ -1,4 +1,19 @@
-import { LayoutDashboard, MessageSquare, Globe, Swords, History, Bot, Share2 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Brain,
+  ListChecks,
+  Globe,
+  MessageSquare,
+  Activity,
+  Wrench,
+  History,
+  Compass,
+  Bot,
+  Share2,
+  Play,
+  BarChart3,
+  Sparkles,
+} from "lucide-react";
 import { defineWorkspace } from "@/workspace/core";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -6,15 +21,25 @@ import {
 } from "@/lib/engine-workspace";
 
 import OverviewBody from "./tabs/overview";
+import BehaviorBody from "./tabs/behavior";
+import RecommendationsBody from "./tabs/recommendations";
+import CitationsBody from "./tabs/citations";
 import PromptsBody from "./tabs/prompts";
-import SourcesBody from "./tabs/sources";
-import CompetitorsBody from "./tabs/competitors";
+import ModelChangesBody from "./tabs/model-changes";
+import OptimizationBody from "./tabs/optimization";
 import HistoryBody from "./tabs/history";
+import InsightsBody from "./tabs/insights";
 import CopilotBody from "./tabs/copilot";
 import EngineWorkspaceListeners from "./EngineWorkspaceListeners.client";
 
 // ============================================================
-// Engine workspace descriptor. Seventh UWE kind.
+// Engine workspace descriptor. Each engine is a first-class object —
+// the tabs answer:
+//   How does this AI think? (Overview + Behavior)
+//   Why does it recommend competitors? (Insights + Prompt Coverage)
+//   What changed recently? (Model Changes)
+//   How do I optimize? (Optimization + Recommendations)
+//
 // Slug = engine name. Brand context is pulled from the cookie
 // (getSelectedBrand). Unknown engine or no brand → null → 404.
 // ============================================================
@@ -65,13 +90,7 @@ const engineWorkspace = defineWorkspace<Engine>({
       delta: e.stats.mentionRate7dDelta ?? undefined,
       deltaFormat: "pp",
       hint: "vs prior 7d",
-      href: `/dashboard/w/engine/${e.name}/history`,
-    },
-    {
-      key: "avg-pos",
-      label: "Avg position",
-      value: e.stats.avgPosition == null ? "—" : e.stats.avgPosition,
-      hint: e.stats.runCount > 0 ? "when mentioned" : "no mentions",
+      href: `/dashboard/w/engine/${e.name}/model-changes`,
     },
     {
       key: "citations",
@@ -83,7 +102,14 @@ const engineWorkspace = defineWorkspace<Engine>({
           : e.meta.cites
             ? "run more scans"
             : "engine rarely cites",
-      href: `/dashboard/w/engine/${e.name}/sources`,
+      href: `/dashboard/w/engine/${e.name}/citations`,
+    },
+    {
+      key: "changes",
+      label: "Change events",
+      value: e.changeEvents30d,
+      hint: e.changeEvents30d === 0 ? "steady last 30d" : "detected shifts",
+      href: `/dashboard/w/engine/${e.name}/model-changes`,
     },
   ],
 
@@ -94,41 +120,74 @@ const engineWorkspace = defineWorkspace<Engine>({
       icon: LayoutDashboard,
       render: ({ object: e }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
           <OverviewBody engine={e} />
         </>
       ),
     },
     {
-      key: "prompts",
-      label: "Prompts",
-      icon: MessageSquare,
+      key: "behavior",
+      label: "Behavior",
+      icon: Brain,
       render: ({ object: e }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
-          <PromptsBody engine={e} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <BehaviorBody engine={e} />
         </>
       ),
     },
     {
-      key: "sources",
-      label: "Sources",
+      key: "recommendations",
+      label: "Recommendations",
+      icon: ListChecks,
+      render: ({ object: e }) => (
+        <>
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <RecommendationsBody engine={e} />
+        </>
+      ),
+    },
+    {
+      key: "citations",
+      label: "Citations",
       icon: Globe,
-      render: ({ object: e }) => (
+      render: ({ object: e, searchParams }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
-          <SourcesBody engine={e} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <CitationsBody engine={e} searchParams={searchParams} />
         </>
       ),
     },
     {
-      key: "competitors",
-      label: "Competitors",
-      icon: Swords,
+      key: "prompts",
+      label: "Prompt Coverage",
+      icon: MessageSquare,
+      render: ({ object: e, searchParams }) => (
+        <>
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <PromptsBody engine={e} searchParams={searchParams} />
+        </>
+      ),
+    },
+    {
+      key: "model-changes",
+      label: "Model Changes",
+      icon: Activity,
       render: ({ object: e }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
-          <CompetitorsBody engine={e} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <ModelChangesBody engine={e} />
+        </>
+      ),
+    },
+    {
+      key: "optimization",
+      label: "Optimization",
+      icon: Wrench,
+      render: ({ object: e }) => (
+        <>
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <OptimizationBody engine={e} />
         </>
       ),
     },
@@ -138,18 +197,29 @@ const engineWorkspace = defineWorkspace<Engine>({
       icon: History,
       render: ({ object: e }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
           <HistoryBody engine={e} />
         </>
       ),
     },
     {
+      key: "insights",
+      label: "Insights",
+      icon: Compass,
+      render: ({ object: e }) => (
+        <>
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
+          <InsightsBody engine={e} />
+        </>
+      ),
+    },
+    {
       key: "copilot",
-      label: "Copilot",
+      label: "AI Copilot",
       icon: Bot,
       render: ({ object: e }) => (
         <>
-          <EngineWorkspaceListeners engineId={e.id} />
+          <EngineWorkspaceListeners engineName={e.name} engineDisplay={e.displayName} />
           <CopilotBody engine={e} />
         </>
       ),
@@ -215,6 +285,43 @@ const engineWorkspace = defineWorkspace<Engine>({
           relation: "priority_prompts",
         });
       }
+      // Top cited domains — the knowledge-graph edge from engine to sources.
+      const { data: promptIdsRes } = await supabase
+        .from("prompts")
+        .select("id")
+        .eq("brand_id", e.brand.id)
+        .limit(500);
+      const promptIds = ((promptIdsRes as { id: string }[] | null) ?? []).map((p) => p.id);
+      if (promptIds.length > 0) {
+        const { data: runs } = await supabase
+          .from("visibility_runs")
+          .select("id")
+          .eq("engine_id", e.id)
+          .in("prompt_id", promptIds)
+          .limit(500);
+        const runIds = ((runs as { id: string }[] | null) ?? []).map((r) => r.id);
+        if (runIds.length > 0) {
+          const { data: cits } = await supabase
+            .from("citations")
+            .select("cited_domain")
+            .in("run_id", runIds);
+          const counts = new Map<string, number>();
+          for (const c of (cits as { cited_domain: string | null }[] | null) ?? []) {
+            const d = c.cited_domain;
+            if (!d) continue;
+            counts.set(d, (counts.get(d) ?? 0) + 1);
+          }
+          const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+          for (const [domain] of top) {
+            nodes.push({
+              kind: "source",
+              id: domain,
+              label: domain,
+              relation: "cites",
+            });
+          }
+        }
+      }
       return nodes;
     },
   }),
@@ -227,17 +334,39 @@ const engineWorkspace = defineWorkspace<Engine>({
       keyboard: "s",
       event: { name: "engine:share", detail: { engineName: e.name } },
     },
+    {
+      id: "simulate",
+      label: "Simulate a move",
+      icon: Play,
+      keyboard: "m",
+      event: { name: "engine:simulate", detail: { engineName: e.name } },
+    },
+    {
+      id: "compare",
+      label: "Compare engines",
+      icon: BarChart3,
+      keyboard: "c",
+      event: { name: "engine:compare", detail: { engineName: e.name } },
+    },
+    {
+      id: "strategy",
+      label: "Generate optimization",
+      icon: Sparkles,
+      keyboard: "g",
+      event: { name: "engine:strategy", detail: { engineName: e.name } },
+    },
   ],
 
   copilotContext: (e) => ({
     kind: "engine",
     id: e.name,
     label: e.displayName,
-    summary: `Engine "${e.displayName}" answering questions about brand ${e.brand.name}.${e.stats.mentionRate != null ? ` Mention rate ${e.stats.mentionRate}% over ${e.stats.runCount} runs.` : ""}${e.stats.ownCitationShare != null ? ` Own-citation share ${e.stats.ownCitationShare}%.` : ""}`,
+    summary: `Engine "${e.displayName}" answering questions about brand ${e.brand.name}.${e.stats.mentionRate != null ? ` Mention rate ${e.stats.mentionRate}% over ${e.stats.runCount} runs.` : ""}${e.stats.ownCitationShare != null ? ` Own-citation share ${e.stats.ownCitationShare}%.` : ""}${e.personality.runs_observed > 0 ? ` Personality: verbosity ${Math.round(e.personality.verbosity)}, hedging ${Math.round(e.personality.hedging)}, format_bias ${Math.round(e.personality.format_bias)}.` : ""}`,
     hints: [
-      "Answer from real visibility_runs + citations for this engine only.",
-      "Never invent engine behavior — if data is missing, say so.",
-      "For content drafts, keep [ADD ...] placeholders.",
+      "Answer ONLY from this engine's runs against the current brand. Never invent behavior for other engines.",
+      "When the user asks 'why did it recommend X', point at the specific run + response text.",
+      "For content drafts, keep [ADD ...] placeholders — never invent owner-only facts.",
+      "Deterministic-first: cite counts and rates from the data. If data is missing, say so.",
     ],
   }),
 

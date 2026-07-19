@@ -12,6 +12,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSelectedBrand } from "@/lib/selected-brand";
+import type { EnginePersonality } from "./engine-personality";
+import { EMPTY_PERSONALITY } from "./engine-personality";
+
+export type EngineSnapshotPoint = {
+  captured_on: string;              // yyyy-mm-dd
+  mention_rate: number | null;
+  own_citation_share: number | null;
+};
 
 export type EngineStats = {
   runCount: number;              // total non-skipped runs for this engine × brand
@@ -86,6 +94,9 @@ export type Engine = {
   meta: EngineDescriptor;
   brand: EngineBrand;
   stats: EngineStats;
+  personality: EnginePersonality; // EMPTY_PERSONALITY when no data
+  changeEvents30d: number;        // count of engine_change_events in last 30d; 0 pre-migration-029
+  snapshotSeries: EngineSnapshotPoint[]; // last 30 daily snapshots; [] pre-migration-029
 };
 
 export async function getEngineByName(name: string): Promise<Engine | null> {
@@ -103,10 +114,16 @@ export async function getEngineByName(name: string): Promise<Engine | null> {
   const { brand } = await getSelectedBrand();
   if (!brand) return null; // no brand context → 404
 
-  const stats = await loadEngineStats((eng as { id: string }).id, brand.id, supabase);
+  const engineId = (eng as { id: string }).id;
+  const [stats, personality, changeEvents30d, snapshotSeries] = await Promise.all([
+    loadEngineStats(engineId, brand.id, supabase),
+    loadPersonality(engineId, brand.id, supabase),
+    loadChangeEvents30d(engineId, brand.id, supabase),
+    loadSnapshotSeries(engineId, brand.id, supabase),
+  ]);
 
   return {
-    id: (eng as { id: string }).id,
+    id: engineId,
     name: (eng as { name: string }).name,
     displayName: meta.displayName,
     is_active: (eng as { is_active: boolean }).is_active,
@@ -118,7 +135,74 @@ export async function getEngineByName(name: string): Promise<Engine | null> {
       domain: brand.domain,
     },
     stats,
+    personality,
+    changeEvents30d,
+    snapshotSeries,
   };
+}
+
+// Personality is a cache-first lookup: prefer the engine_personalities
+// row (populated by the nightly cron); when absent (pre-migration-029 or
+// before the first cron run), return EMPTY_PERSONALITY so the workspace
+// falls back to empty-state coaching rather than a crash.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadPersonality(engineId: string, brandId: string, supabase: any): Promise<EnginePersonality> {
+  try {
+    const { data } = await supabase
+      .from("engine_personalities")
+      .select(
+        "verbosity, hedging, format_bias, freshness_bias, citation_density, entity_resolution, sample_run_ids, runs_observed",
+      )
+      .eq("engine_id", engineId)
+      .eq("brand_id", brandId)
+      .maybeSingle();
+    if (!data) return { ...EMPTY_PERSONALITY };
+    return {
+      verbosity: Number(data.verbosity) || 0,
+      hedging: Number(data.hedging) || 0,
+      format_bias: Number(data.format_bias) || 0,
+      freshness_bias: Number(data.freshness_bias) || 0,
+      citation_density: Number(data.citation_density) || 0,
+      entity_resolution: Number(data.entity_resolution) || 0,
+      sample_run_ids: (data.sample_run_ids as string[] | null) ?? [],
+      runs_observed: Number(data.runs_observed) || 0,
+    };
+  } catch {
+    return { ...EMPTY_PERSONALITY };
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadChangeEvents30d(engineId: string, brandId: string, supabase: any): Promise<number> {
+  const thirty = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  try {
+    const { count } = await supabase
+      .from("engine_change_events")
+      .select("id", { count: "exact", head: true })
+      .eq("engine_id", engineId)
+      .or(`brand_id.eq.${brandId},brand_id.is.null`)
+      .gte("occurred_on", thirty);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadSnapshotSeries(engineId: string, brandId: string, supabase: any): Promise<EngineSnapshotPoint[]> {
+  const thirty = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  try {
+    const { data } = await supabase
+      .from("engine_snapshots")
+      .select("captured_on, mention_rate, own_citation_share")
+      .eq("engine_id", engineId)
+      .eq("brand_id", brandId)
+      .gte("captured_on", thirty)
+      .order("captured_on", { ascending: true });
+    return (data as EngineSnapshotPoint[] | null) ?? [];
+  } catch {
+    return [];
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

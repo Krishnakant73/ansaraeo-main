@@ -45,7 +45,13 @@ type FeedEntry = {
   at: string;
 };
 
-const ALL_KINDS = new Set(["alert.fired", "scan.completed", "task.completed"]);
+const ALL_KINDS = new Set([
+  "alert.fired",
+  "scan.completed",
+  "task.completed",
+  "engine.change",
+  "opportunity.new",
+]);
 
 function frame(event: string, data: unknown): Uint8Array {
   const payload = typeof data === "string" ? data : JSON.stringify(data);
@@ -65,8 +71,23 @@ export async function GET(req: NextRequest) {
   const emitsTasks = kinds.has("task.completed");
   const emitsScans = kinds.has("scan.completed");
   const emitsAlerts = kinds.has("alert.fired");
+  const emitsEngineChanges = kinds.has("engine.change");
+  const emitsOpportunities = kinds.has("opportunity.new");
 
   const supabase = await createClient();
+
+  // Resolve the brand slug up-front so hrefs into brand-scoped pages
+  // (opportunities, engine-matrix, ...) can use the URL grammar instead
+  // of leaking uuid segments. RLS-safe: an unauthorized caller reads null.
+  let brandSlug: string | null = null;
+  if (brandId) {
+    const { data: b } = await supabase
+      .from("brands")
+      .select("slug")
+      .eq("id", brandId)
+      .maybeSingle();
+    brandSlug = (b as { slug: string | null } | null)?.slug ?? null;
+  }
 
   // Baseline "since" is now — the ActivityFeed on page load already
   // includes historical rows; the stream is for *new* things.
@@ -181,6 +202,78 @@ export async function GET(req: NextRequest) {
             at: t.completed_at,
           });
         }
+      }
+    }
+
+    // 4. Engine change events since last tick. Two paths: brand-attributed
+    //    rows (RLS lets us read them directly by brand_id) and evidence-run
+    //    rows (RLS predicate joins through visibility_runs; we still filter
+    //    the client-side query by created_at for the tick watermark).
+    if (emitsEngineChanges) {
+      const { data: events } = await supabase
+        .from("engine_change_events")
+        .select("id, engine_id, kind, magnitude, summary, occurred_on, created_at")
+        .eq("brand_id", brandId)
+        .gt("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      for (const e of (events as {
+        id: string;
+        engine_id: string;
+        kind: string;
+        magnitude: number | null;
+        summary: string;
+        occurred_on: string;
+        created_at: string;
+      }[] | null) ?? []) {
+        // Resolve engine name via the small engines table for a click-through.
+        const { data: eng } = await supabase
+          .from("engines")
+          .select("name")
+          .eq("id", e.engine_id)
+          .maybeSingle();
+        const engineName = (eng as { name: string } | null)?.name;
+        entries.push({
+          id: `engine-change-${e.id}`,
+          kind: "engine.change",
+          message: `${e.kind.replace("_", " ")}${e.magnitude != null ? ` · ${e.magnitude >= 0 ? "+" : ""}${e.magnitude}pp` : ""}`,
+          detail: e.summary,
+          href: engineName
+            ? `/dashboard/w/engine/${engineName}/model-changes`
+            : undefined,
+          at: e.created_at,
+        });
+      }
+    }
+
+    // 5. New opportunity_recommendations rows since last tick. Feeds the
+    //    Opportunity Radar band on the Battle Plan tab live.
+    if (emitsOpportunities) {
+      const { data: opps } = await supabase
+        .from("opportunity_recommendations")
+        .select("id, title, type, priority_score, engine_id, competitor_id, created_at")
+        .eq("brand_id", brandId)
+        .gt("created_at", since)
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      for (const o of (opps as {
+        id: string;
+        title: string;
+        type: string;
+        priority_score: number | null;
+        engine_id: string | null;
+        competitor_id: string | null;
+        created_at: string;
+      }[] | null) ?? []) {
+        entries.push({
+          id: `opportunity-${o.id}`,
+          kind: "opportunity.new",
+          message: `New opportunity: ${o.title}`,
+          detail: `${o.type}${o.priority_score != null ? ` · priority ${Math.round(Number(o.priority_score))}` : ""}`,
+          href: brandSlug ? `/dashboard/b/${brandSlug}/opportunities` : "/dashboard/opportunities",
+          at: o.created_at,
+        });
       }
     }
 

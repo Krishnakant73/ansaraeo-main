@@ -26,6 +26,12 @@ function assertCronAuth(req: NextRequest): boolean {
   return auth === `Bearer ${process.env.CRON_SECRET}`;
 }
 
+// GET === POST here. Vercel cron uses HTTP GET; keep POST as the
+// manual-fire / API-key path.
+export async function GET(req: NextRequest) {
+  return POST(req);
+}
+
 export async function POST(req: NextRequest) {
   if (!assertCronAuth(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

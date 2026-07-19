@@ -32,7 +32,14 @@ export async function parseJsonBody<T>(
 // Reusable schemas for the highest-traffic routes.
 export const visibilityCheckSchema = z.object({ promptId: z.string().min(1) });
 
-export const contentGenerateSchema = z.object({ promptId: z.string().min(1) });
+// targetEngine is optional; the engine list is bounded to the six
+// callers we know about so a bad string can't smuggle a prompt injection
+// through the shape rail. Empty string is treated as "no target".
+const ENGINE_NAMES = ["chatgpt", "perplexity", "gemini", "google_ai_overview", "grok", "copilot"] as const;
+export const contentGenerateSchema = z.object({
+  promptId: z.string().min(1),
+  targetEngine: z.enum(ENGINE_NAMES).optional(),
+});
 
 export const agentChatSchema = z.object({
   message: z.string().min(1).max(8000),

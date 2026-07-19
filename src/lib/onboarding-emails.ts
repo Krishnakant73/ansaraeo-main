@@ -232,6 +232,52 @@ Double down on this angle: ${dashboardUrl()}/dashboard/content
   };
 }
 
+export function engineChangeEmail(params: {
+  email: string;
+  brandName: string;
+  engineDisplay: string;
+  engineSlug: string;
+  kind: "baseline_drift" | "citation_shift" | "format_shift" | "manual";
+  magnitude: number | null;
+  summary: string;
+}) {
+  const dir =
+    params.magnitude != null && params.magnitude !== 0
+      ? params.magnitude > 0 ? "up" : "down"
+      : "shifting";
+  const magText =
+    params.magnitude != null ? ` ${Math.abs(params.magnitude).toFixed(1)}pp ${dir}` : "";
+  const kindLabel =
+    params.kind === "baseline_drift" ? "Mention rate"
+    : params.kind === "citation_shift" ? "Citation share"
+    : params.kind === "format_shift" ? "Format bias"
+    : "Behavior";
+  const subject = `${params.engineDisplay}: ${kindLabel}${magText} for ${params.brandName}`;
+  const cta = `${dashboardUrl()}/dashboard/w/engine/${params.engineSlug}/model-changes`;
+  return {
+    email: {
+      to: params.email,
+      subject,
+      text: `${params.engineDisplay}'s answering pattern for ${params.brandName} has shifted.
+
+${params.summary}
+
+Open the change log to see the runs that triggered it and queue a response:
+${cta}
+`,
+    },
+    whatsapp: {
+      templateName: "aeo_engine_change",
+      params: [
+        params.brandName,
+        params.engineDisplay,
+        kindLabel,
+        params.magnitude != null ? `${params.magnitude.toFixed(1)}pp` : "shift",
+      ],
+    },
+  };
+}
+
 export function weeklyDigestEmail(params: {
   email: string;
   brandName: string;

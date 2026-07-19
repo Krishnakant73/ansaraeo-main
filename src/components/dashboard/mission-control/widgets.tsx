@@ -156,7 +156,12 @@ function ExecTile({
     >
       <div className="flex items-center justify-between">
         <span className="kpi-label">{label}</span>
-        <ArrowUpRight className="h-3.5 w-3.5 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+        {/* Affordance visible on hover, touch (via focus-within), and keyboard (via focus-visible).
+            Touch users get it on tap; keyboard users get it while the card is focused. */}
+        <ArrowUpRight
+          aria-hidden
+          className="h-3.5 w-3.5 text-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-0"
+        />
       </div>
       <div className="kpi-value">{value}</div>
       <div className="mt-1 flex items-center gap-2 text-xs">

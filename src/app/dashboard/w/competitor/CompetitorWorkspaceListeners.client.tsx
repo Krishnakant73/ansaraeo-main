@@ -42,20 +42,46 @@ export default function CompetitorWorkspaceListeners({
       if (detail?.competitorId && detail.competitorId !== competitorId) return;
       await post("reject");
     }
-    async function onShare() {
-      try {
-        if (navigator.clipboard) await navigator.clipboard.writeText(window.location.href);
-      } catch {
-        /* silent */
-      }
+    async function onShare(e: Event) {
+      // Match by competitor id if attached — safety-net for multi-workspace
+      // tabs (edge case: fast tab-switch mid-dispatch).
+      const detail = (e as CustomEvent<{ competitorId?: string; label?: string }>).detail;
+      if (detail?.competitorId && detail.competitorId !== competitorId) return;
+      // Delegate to the shared share-link modal at the shell level.
+      window.dispatchEvent(
+        new CustomEvent("competitor:share-link", {
+          detail: {
+            workspaceKind: "competitor",
+            workspaceId: competitorId,
+            label: detail?.label ?? "this competitor",
+          },
+        }),
+      );
+    }
+    function onOpenPrompts() {
+      router.push(`/dashboard/w/competitor/${competitorId}/prompts`);
+    }
+    function onOpenBattlePlan() {
+      router.push(`/dashboard/w/competitor/${competitorId}/battle-plan`);
+    }
+    function onSimulate() {
+      // Navigate to Overview (where the Simulator lives) and open it.
+      // The Simulator reads a URL param to auto-open.
+      router.push(`/dashboard/w/competitor/${competitorId}/overview?sim=1`);
     }
     window.addEventListener("competitor:confirm", onConfirm);
     window.addEventListener("competitor:reject", onReject);
     window.addEventListener("competitor:share", onShare);
+    window.addEventListener("competitor:open-prompts", onOpenPrompts);
+    window.addEventListener("competitor:open-battle-plan", onOpenBattlePlan);
+    window.addEventListener("competitor:simulate", onSimulate);
     return () => {
       window.removeEventListener("competitor:confirm", onConfirm);
       window.removeEventListener("competitor:reject", onReject);
       window.removeEventListener("competitor:share", onShare);
+      window.removeEventListener("competitor:open-prompts", onOpenPrompts);
+      window.removeEventListener("competitor:open-battle-plan", onOpenBattlePlan);
+      window.removeEventListener("competitor:simulate", onSimulate);
     };
   }, [competitorId, router]);
 

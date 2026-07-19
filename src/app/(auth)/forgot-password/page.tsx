@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
         <ArrowLeft className="h-4 w-4" /> Back to login
       </Link>
 
-      <div className="card w-full max-w-md p-8 hover:!translate-y-0 hover:!scale-100">
+      <div className="card w-full max-w-md p-8 hover:translate-y-0! hover:scale-100!">
         <Brandmark className="mb-6 justify-center" />
         <h1 className="text-2xl font-extrabold tracking-tight">Reset your password</h1>
         <p className="mt-2 text-sm text-muted">We&apos;ll email you a link to set a new one.</p>
@@ -58,9 +58,10 @@ export default function ForgotPasswordPage() {
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-line px-4 py-2.5 text-sm outline-none focus:border-accent"
+                className="mt-1.5 w-full rounded-xl border border-line px-4 py-2.5 text-sm transition-colors focus:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
                 placeholder="you@company.com"
               />
             </div>

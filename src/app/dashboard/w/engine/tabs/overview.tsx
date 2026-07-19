@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import InsightCard from "@/workspace/primitives/InsightCard";
+import AiPersonalityProfile from "../features/AiPersonalityProfile";
+import AiDnaRadar from "../features/AiDnaRadar";
+import AiChangeLog from "../features/AiChangeLog";
 import { timeAgo, type Engine } from "@/lib/engine-workspace";
 
 // ============================================================
@@ -89,6 +92,14 @@ export default async function OverviewBody({ engine }: { engine: Engine }) {
         </div>
       </section>
 
+      {/* AI Personality Profile — top-of-fold: how does this engine think? */}
+      {engine.personality.runs_observed > 0 && (
+        <AiPersonalityProfile engine={engine} />
+      )}
+
+      {/* AI DNA Radar — this engine vs the brand's cross-engine baseline. */}
+      {engine.stats.runCount > 0 && <AiDnaRadar engine={engine} />}
+
       {/* Health cards */}
       {engine.stats.runCount === 0 && (
         <InsightCard
@@ -150,6 +161,24 @@ export default async function OverviewBody({ engine }: { engine: Engine }) {
               </p>
             )}
           </div>
+        </section>
+      )}
+
+      {/* Change log preview */}
+      {engine.changeEvents30d > 0 && (
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-sm font-semibold text-ink">
+              What changed on {engine.displayName}
+            </h3>
+            <Link
+              href={`/dashboard/w/engine/${engine.name}/model-changes`}
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Full change log →
+            </Link>
+          </div>
+          <AiChangeLog engine={engine} />
         </section>
       )}
 

@@ -299,6 +299,18 @@ export default function CommandPalette({
         return;
       }
 
+      // Object-scoped events (competitor:*, prompt:*, etc.) — the
+      // active workspace listener claims them. Only fires when the
+      // user is inside that workspace kind; safe otherwise (nobody
+      // listening = no-op).
+      if (cmd.action && /^[a-z]+:[a-z-]+$/.test(cmd.action) && !cmd.action.startsWith("copilot:")) {
+        setOpen(false);
+        window.dispatchEvent(
+          new CustomEvent(cmd.action, { detail: cmd.actionPayload ?? {} }),
+        );
+        return;
+      }
+
       // Direct route.
       const resolved = resolveHref(cmd, brandSlug);
       if (resolved) {

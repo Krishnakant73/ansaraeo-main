@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = await parseJsonBody(request, contentGenerateSchema);
     if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
-    const { promptId } = parsed.data;
+    const { promptId, targetEngine } = parsed.data;
 
     const { data: prompt } = await supabase
       .from("prompts")
@@ -32,10 +32,21 @@ export async function POST(request: NextRequest) {
 
     const brand = Array.isArray(prompt.brands) ? prompt.brands[0] : prompt.brands;
 
+    // If the caller picked a target engine, load its personality so the
+    // deterministic shape rail can steer the draft (voice, structure,
+    // citation appetite). Absent target → no rail, same behavior as before.
+    let target = undefined;
+    if (targetEngine) {
+      const { loadShapeRail } = await import("@/lib/content-engine");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      target = (await loadShapeRail(supabase as any, targetEngine, prompt.brand_id)) ?? undefined;
+    }
+
     const draft = await generateContentDraft({
       brandName: brand?.name ?? "the brand",
       promptText: prompt.text,
       industry: brand?.industry ?? null,
+      target,
     });
 
     const { data: contentItem, error } = await supabase
@@ -46,6 +57,7 @@ export async function POST(request: NextRequest) {
         title: draft.title,
         content_markdown: draft.contentMarkdown,
         status: "draft",
+        target_engine: targetEngine ?? null,
       })
       .select()
       .single();

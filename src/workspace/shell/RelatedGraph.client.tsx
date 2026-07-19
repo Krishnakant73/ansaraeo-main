@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { List, Network } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { List, Maximize2, Network, X } from "lucide-react";
 
 // ============================================================
 // RelatedGraph — client-side toggle between the default list view
@@ -61,6 +61,20 @@ export default function RelatedGraph({
   title?: string;
 }) {
   const [view, setView] = useState<"list" | "graph">("list");
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [fullscreen]);
 
   // Cluster by relation for the list view.
   const byRelation = useMemo(() => {
@@ -132,8 +146,49 @@ export default function RelatedGraph({
           >
             <Network className="h-3 w-3" aria-hidden /> Graph
           </button>
+          {view === "graph" && (
+            <button
+              type="button"
+              onClick={() => setFullscreen(true)}
+              className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="Expand graph fullscreen"
+              title="Expand fullscreen"
+            >
+              <Maximize2 className="h-3 w-3" aria-hidden />
+            </button>
+          )}
         </div>
       </div>
+
+      {fullscreen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${title} — fullscreen graph`}
+          className="fixed inset-0 z-50 flex flex-col bg-white"
+        >
+          <header className="flex items-center justify-between border-b border-line px-6 py-3">
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4 text-muted" aria-hidden />
+              <h2 className="text-sm font-semibold text-ink">{title}</h2>
+              <span className="text-[11px] text-muted">
+                · {centerLabel} · {nodes.length} related
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFullscreen(false)}
+              className="rounded-full p-1.5 text-muted hover:bg-surface hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              aria-label="Close fullscreen (Esc)"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </header>
+          <div className="flex-1 overflow-auto p-6">
+            <FullscreenGraph nodes={nodes} centerKind={centerKind} centerLabel={centerLabel} />
+          </div>
+        </div>
+      )}
 
       {view === "list" ? (
         <div className="space-y-3">
@@ -248,5 +303,132 @@ export default function RelatedGraph({
         </div>
       )}
     </section>
+  );
+}
+
+// ============================================================
+// FullscreenGraph — the bigger canvas version. Keeps the same
+// deterministic layout (radial, no random jitter) but at a much
+// larger radius so labels don't have to elide, and clusters the
+// nodes by kind so like-with-like ends up on the same arc.
+// ============================================================
+
+function FullscreenGraph({
+  nodes,
+  centerKind,
+  centerLabel,
+}: {
+  nodes: RelatedNode[];
+  centerKind: string;
+  centerLabel: string;
+}) {
+  const layout = useMemo(() => {
+    const w = 1200;
+    const h = 720;
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.min(w, h) / 2 - 100;
+
+    // Cluster by kind so like kinds sit together on the arc.
+    const grouped = new Map<string, RelatedNode[]>();
+    for (const n of nodes) {
+      const arr = grouped.get(n.kind) ?? [];
+      arr.push(n);
+      grouped.set(n.kind, arr);
+    }
+    const ordered: RelatedNode[] = [];
+    for (const [, arr] of grouped) ordered.push(...arr);
+    const total = Math.max(1, ordered.length);
+    const positions = ordered.map((n, i) => {
+      const angle = -Math.PI / 2 + (2 * Math.PI * i) / total;
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      return { node: n, x, y, angle };
+    });
+    return { w, h, cx, cy, positions };
+  }, [nodes]);
+
+  return (
+    <svg
+      role="img"
+      aria-label={`Full graph of objects related to ${centerLabel}`}
+      viewBox={`0 0 ${layout.w} ${layout.h}`}
+      className="mx-auto block max-w-6xl"
+    >
+      {layout.positions.map((p) => (
+        <line
+          key={`spoke-${p.node.kind}-${p.node.id}`}
+          x1={layout.cx}
+          y1={layout.cy}
+          x2={p.x}
+          y2={p.y}
+          stroke="#e2e8f0"
+          strokeWidth={1}
+        />
+      ))}
+      <g>
+        <circle cx={layout.cx} cy={layout.cy} r={44} fill={colorForKind(centerKind)} opacity={0.15} />
+        <circle cx={layout.cx} cy={layout.cy} r={28} fill={colorForKind(centerKind)} />
+        <text
+          x={layout.cx}
+          y={layout.cy + 4}
+          textAnchor="middle"
+          fontSize={12}
+          fontWeight={600}
+          fill="#fff"
+        >
+          {centerKind.slice(0, 4).toUpperCase()}
+        </text>
+        <text
+          x={layout.cx}
+          y={layout.cy + 62}
+          textAnchor="middle"
+          fontSize={13}
+          fontWeight={600}
+          fill="#0f172a"
+        >
+          {centerLabel.length > 32 ? centerLabel.slice(0, 32) + "…" : centerLabel}
+        </text>
+      </g>
+      {layout.positions.map((p) => {
+        const rightSide = p.x >= layout.cx;
+        const labelX = rightSide ? p.x + 18 : p.x - 18;
+        const anchor = rightSide ? "start" : "end";
+        return (
+          <a
+            key={`node-${p.node.kind}-${p.node.id}`}
+            href={hrefFor(p.node.kind, p.node.id)}
+            className="cursor-pointer"
+          >
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={14}
+              fill={colorForKind(p.node.kind)}
+              className="transition-opacity hover:opacity-80"
+            />
+            <text
+              x={labelX}
+              y={p.y + 3}
+              textAnchor={anchor}
+              fontSize={13}
+              fill="#0f172a"
+              fontWeight={600}
+            >
+              {p.node.label.length > 30 ? p.node.label.slice(0, 30) + "…" : p.node.label}
+            </text>
+            <text
+              x={labelX}
+              y={p.y + 18}
+              textAnchor={anchor}
+              fontSize={10}
+              fill="#94a3b8"
+            >
+              {p.node.kind} · {p.node.relation.replace(/_/g, " ")}
+            </text>
+          </a>
+        );
+      })}
+    </svg>
   );
 }

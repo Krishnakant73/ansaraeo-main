@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import SmoothScroll from "@/components/layout/SmoothScroll";
@@ -39,6 +39,20 @@ export const metadata: Metadata = {
       "Track and win AI search mentions across ChatGPT, Perplexity and Gemini — in English, Hindi and Hinglish.",
   },
   robots: { index: true, follow: true },
+};
+
+// Explicit viewport export — Next.js 14+ moved this out of `metadata`.
+// `viewport-fit=cover` lets the marketing hero + workspace shell paint
+// into iOS safe-area notches; `maximum-scale` is deliberately omitted so
+// pinch-zoom stays available (a11y — WCAG 1.4.4 Resize Text).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 const jsonLd = {

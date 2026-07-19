@@ -1,17 +1,22 @@
 import {
   LayoutDashboard, MessageSquare, Globe, Shield, History, Sparkles, Bot,
-  Check, X, Share2,
+  Check, X, Share2, Lightbulb, FileText, Zap, ShieldAlert, Kanban, LineChart,
 } from "lucide-react";
 import { defineWorkspace } from "@/workspace/core";
 import { createClient } from "@/lib/supabase/server";
 import { getCompetitorById, timeAgo, type Competitor } from "@/lib/competitor-workspace";
+import { scoreCompetitorThreat } from "@/lib/competitor-traits";
 
 import OverviewBody from "./tabs/overview";
 import PromptsBody from "./tabs/prompts";
-import SourcesBody from "./tabs/sources";
-import BattlecardBody from "./tabs/battlecard";
-import HistoryBody from "./tabs/history";
-import InsightsBody from "./tabs/insights";
+import RecommendationsBody from "./tabs/recommendations";
+import CitationsBody from "./tabs/citations";
+import ContentStrategyBody from "./tabs/content-strategy";
+import StrengthsBody from "./tabs/strengths";
+import WeaknessesBody from "./tabs/weaknesses";
+import TimelineBody from "./tabs/timeline";
+import ForecastBody from "./tabs/forecast";
+import BattlePlanBody from "./tabs/battle-plan";
 import CopilotBody from "./tabs/copilot";
 import CompetitorWorkspaceListeners from "./CompetitorWorkspaceListeners.client";
 
@@ -159,7 +164,7 @@ const competitorWorkspace = defineWorkspace<Competitor>({
     },
     {
       key: "prompts",
-      label: "Prompts",
+      label: "Prompt Dominance",
       icon: MessageSquare,
       render: ({ object: c }) => (
         <>
@@ -169,46 +174,90 @@ const competitorWorkspace = defineWorkspace<Competitor>({
       ),
     },
     {
-      key: "sources",
-      label: "Sources",
+      key: "recommendations",
+      label: "Recommendations",
+      icon: Lightbulb,
+      render: ({ object: c }) => (
+        <>
+          <CompetitorWorkspaceListeners competitorId={c.id} />
+          <RecommendationsBody competitor={c} />
+        </>
+      ),
+    },
+    {
+      key: "citations",
+      label: "Citations",
       icon: Globe,
       render: ({ object: c }) => (
         <>
           <CompetitorWorkspaceListeners competitorId={c.id} />
-          <SourcesBody competitor={c} />
+          <CitationsBody competitor={c} />
         </>
       ),
     },
     {
-      key: "battlecard",
-      label: "Battlecard",
-      icon: Shield,
+      key: "content-strategy",
+      label: "Content Strategy",
+      icon: FileText,
       render: ({ object: c }) => (
         <>
           <CompetitorWorkspaceListeners competitorId={c.id} />
-          <BattlecardBody competitor={c} />
+          <ContentStrategyBody competitor={c} />
         </>
       ),
     },
     {
-      key: "history",
-      label: "History",
+      key: "strengths",
+      label: "Strengths",
+      icon: Zap,
+      render: ({ object: c }) => (
+        <>
+          <CompetitorWorkspaceListeners competitorId={c.id} />
+          <StrengthsBody competitor={c} />
+        </>
+      ),
+    },
+    {
+      key: "weaknesses",
+      label: "Weaknesses",
+      icon: ShieldAlert,
+      render: ({ object: c }) => (
+        <>
+          <CompetitorWorkspaceListeners competitorId={c.id} />
+          <WeaknessesBody competitor={c} />
+        </>
+      ),
+    },
+    {
+      key: "timeline",
+      label: "Timeline",
       icon: History,
-      render: ({ object: c }) => (
+      render: ({ object: c, searchParams }) => (
         <>
           <CompetitorWorkspaceListeners competitorId={c.id} />
-          <HistoryBody competitor={c} />
+          <TimelineBody competitor={c} searchParams={searchParams} />
         </>
       ),
     },
     {
-      key: "insights",
-      label: "Insights",
-      icon: Sparkles,
+      key: "forecast",
+      label: "Forecast",
+      icon: LineChart,
       render: ({ object: c }) => (
         <>
           <CompetitorWorkspaceListeners competitorId={c.id} />
-          <InsightsBody competitor={c} />
+          <ForecastBody competitor={c} />
+        </>
+      ),
+    },
+    {
+      key: "battle-plan",
+      label: "Battle Plan",
+      icon: Kanban,
+      render: ({ object: c }) => (
+        <>
+          <CompetitorWorkspaceListeners competitorId={c.id} />
+          <BattlePlanBody competitor={c} />
         </>
       ),
     },

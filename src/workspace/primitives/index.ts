@@ -13,6 +13,12 @@ export { default as TimelineList } from "./TimelineList";
 export type { TimelineListEntry } from "./TimelineList";
 export { default as EmptyStateCoach } from "./EmptyStateCoach";
 export type { EmptyStateCoachProps } from "./EmptyStateCoach";
+export { default as EvidenceChip } from "./EvidenceChip";
+export { default as ThreatPill, levelFromScore } from "./ThreatPill";
+export type { ThreatLevel } from "./ThreatPill";
+export { default as Sparkline } from "./Sparkline";
+export { default as HexRadar } from "./HexRadar";
+export type { HexAxis, HexScores } from "./HexRadar";
 export {
   SkeletonLine,
   SkeletonBlock,

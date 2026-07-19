@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Bell, Bot, Building2, Flag, FileDown, IndianRupee, LayoutGrid, LineChart, Megaphone,
+  Bell, Bot, Building2, Flag, FileDown, Grid3x3, IndianRupee, LayoutGrid, LineChart, Megaphone,
   MessageSquare, Plug, ShieldCheck, Swords, Trophy, User, Users,
   ChevronDown, MoreHorizontal, Search,
 } from "lucide-react";
@@ -52,6 +52,7 @@ function buildPinned(slug: string | null): RailItem[] {
 // like the pinned ones. Copilot fullscreen is org-level (URL-agnostic).
 type SecondaryDef = { label: string; suffix?: string; href?: string; icon: Icon };
 const SECONDARY_DEFS: SecondaryDef[] = [
+  { label: "Engine Matrix",    suffix: "/engine-matrix",  icon: Grid3x3 },
   { label: "Alerts",           suffix: "/alerts",         icon: Bell },
   { label: "Opportunities",    suffix: "/opportunities",  icon: Search },
   { label: "Site Audit",       suffix: "/site-audit",     icon: ShieldCheck },

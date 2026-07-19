@@ -11,6 +11,7 @@ import ObjectsRail from "./ObjectsRail";
 import CommandPalette from "./CommandPalette";
 import CopilotDock from "./CopilotDock";
 import RecentObjectsTracker from "./RecentObjectsTracker";
+import ShareLinkModal from "./ShareLinkModal.client";
 
 function Brandmark() {
   return (
@@ -114,6 +115,17 @@ export default function DashboardShell({
 
       {/* Copilot dock — always present, always context-aware */}
       <CopilotDock />
+
+      {/* Share-link modal — subscribes to `<kind>:share-link` events dispatched
+          by workspace quick-actions. Kept at shell level so any workspace
+          can open it without wiring its own modal instance. */}
+      <ShareLinkModal
+        eventNames={[
+          "competitor:share-link",
+          "engine:share-link",
+          "brand:share-link",
+        ]}
+      />
 
       {/* Keyboard shortcuts + help overlay */}
       <Shortcuts />

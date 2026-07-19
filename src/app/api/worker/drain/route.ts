@@ -23,6 +23,12 @@ function mapOutcome(o: EngineOutcome) {
   return { engine: o.engine, success: true, brand_mentioned: o.brand_mentioned };
 }
 
+// GET === POST here. Vercel cron uses HTTP GET; keep POST as the
+// manual-drain / API-key path.
+export async function GET(request: NextRequest) {
+  return POST(request);
+}
+
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

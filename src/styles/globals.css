@@ -41,12 +41,41 @@
       --ws-motion-med: 0ms;
       --ws-motion-slow: 0ms;
     }
+
+    /* Tailwind's built-in keyframe utilities (animate-spin/pulse/bounce/ping)
+       ignore --ws-motion-* tokens because they're hard-coded animation names.
+       Neutralize them at the browser level for reduced-motion users — the
+       WCAG 2.1 SC 2.3.3 (Animation from Interactions) guidance is that any
+       infinite/looping animation should stop or be swappable. We keep a
+       tiny 0.01ms so animations still "fire" (so JS listeners on
+       animationend still resolve) but visually freeze.
+
+       Exception: [data-motion-allow] escapes this — for the rare case a
+       spinner is the only feedback signal (e.g. streaming), a caller can
+       opt back in per-element. Prefer changing the label ("Running…")
+       over spinning glyphs when possible. */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    [data-motion-allow],
+    [data-motion-allow] *,
+    [data-motion-allow]::before,
+    [data-motion-allow]::after {
+      animation-duration: revert !important;
+      animation-iteration-count: revert !important;
+      transition-duration: revert !important;
+    }
   }
 }
 
 @layer components {
   .container-x {
-    @apply mx-auto w-full max-w-[1280px] px-5 md:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-7xl px-5 md:px-6 lg:px-8;
   }
   .btn-primary {
     @apply inline-flex h-12 items-center justify-center gap-2 rounded-full bg-accent px-7 text-sm font-medium tracking-wide text-white shadow-glow transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-accent-hover hover:shadow-glow-lg;
