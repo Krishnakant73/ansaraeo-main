@@ -30,11 +30,16 @@ Thumbs.db
 Desktop.ini
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
+# Compiler / tool output
+tsc-output.txt
+*_output.txt
+*_output.log
 
 # Vercel
 .vercel
@@ -42,6 +47,11 @@ pnpm-debug.log*
 # Supabase local
 supabase/.temp/
 supabase/.branches/
+
+# Local runtime output (screenshots, generated images, etc.)
+*.png
+!public/**/*.png
+!src/**/*.png
 
 # Docs & planning files (keep README)
 *.md
@@ -53,5 +63,3 @@ supabase/.branches/
 
 # gstack skill suite repo (nested .git — kept local, not committed)
 .claude/skills/gstack
-
-.vercel
