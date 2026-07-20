@@ -2,8 +2,8 @@
 // lazy pattern behind the PaymentAdapter port. Zero behavior change for
 // the existing /api/billing/webhook route until it migrates to this adapter.
 
-import crypto from "crypto";
 import { getRazorpay, PLAN_PRICING } from "@/lib/razorpay";
+import { hmacVerify } from "@/lib/platform/signing";
 import type {
   OrderInput,
   OrderResult,
@@ -32,8 +32,9 @@ export class RazorpayAdapter implements PaymentAdapter {
   verifyWebhook(rawBody: string, signature: string): VerifiedWebhook | null {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!secret) return null;
-    const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-    if (expected !== signature) return null;
+    // Constant-time HMAC compare via shared helper — prevents timing side
+    // channels on signature validation.
+    if (!hmacVerify(secret, rawBody, signature)) return null;
 
     let event: {
       event?: string;
