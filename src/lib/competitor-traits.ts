@@ -48,7 +48,7 @@ type CitationRow = {
 // confidence (descending). Empty array on insufficient data —
 // the caller renders EmptyStateCoach instead.
 export async function deriveCompetitorTraits(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: SupabaseClient<any, "public", any>,
   competitor: {
     id: string;

@@ -27,7 +27,7 @@ export class WorkspaceErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error) {
     // Best-effort telemetry; do not throw from a catch.
     if (typeof window !== "undefined" && "console" in window) {
-      // eslint-disable-next-line no-console
+       
       console.error("[workspace]", this.props.label ?? "region", error);
     }
   }

@@ -140,6 +140,7 @@ export default async function TimelineBody({
     // closed (missions with status=done, since they represent your
     // completed moves). Lightweight join; skipped when toggle is off.
     if (showMine) {
+      // eslint-disable-next-line react-hooks/purity
       const ninetyDaysAgo = new Date(Date.now() - 90 * 86_400_000).toISOString();
       const [contentRes, missionsRes] = await Promise.all([
         supabase

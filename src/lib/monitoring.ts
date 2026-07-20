@@ -1,10 +1,15 @@
-// Dependency-free, opt-in error reporting for AnsarAEO.
+// Opt-in error reporting for AnsarAEO. Two independent sinks:
+//   1. Sentry — via @sentry/nextjs when SENTRY_DSN is set. Structured errors,
+//      breadcrumbs, source maps.
+//   2. MONITORING_WEBHOOK_URL — dependency-free fallback (Slack/Discord/etc.)
+//      that still works when Sentry is unreachable or intentionally disabled.
 //
-// If MONITORING_WEBHOOK_URL is set (e.g. a Slack/Discord incoming webhook or
-// any HTTP endpoint that accepts a JSON POST), errors are shipped there
-// fire-and-forget. Otherwise this is a no-op beyond console.error. It is
-// deliberately impossible for reportError to throw into the caller — monitoring
-// must never break the request path.
+// Both sinks are strictly fire-and-forget. reportError() MUST NOT throw into
+// the caller — monitoring must never break the request path.
+//
+// Sentry is imported lazily so this module stays usable in code paths that
+// run before instrumentation.ts (e.g., very early boot errors) and in tests
+// that don't want the SDK loaded.
 
 export type ErrorContext = Record<string, unknown>;
 
@@ -19,6 +24,27 @@ export function reportError(error: unknown, context?: ErrorContext): void {
   }
   if (stack) console.error(stack);
 
+  // Sink 1: Sentry. Lazy import + broad try/catch — never let SDK errors
+  // (or a missing DSN making captureException throw) escape.
+  if (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    void (async () => {
+      try {
+        const Sentry = await import("@sentry/nextjs");
+        if (error instanceof Error) {
+          Sentry.captureException(error, context ? { extra: context } : undefined);
+        } else {
+          Sentry.captureMessage(message, {
+            level: "error",
+            extra: context,
+          });
+        }
+      } catch {
+        /* swallow — monitoring must never break the request path */
+      }
+    })();
+  }
+
+  // Sink 2: raw HTTP webhook (Slack/Discord/etc.).
   const webhook = process.env.MONITORING_WEBHOOK_URL;
   if (!webhook) return;
 

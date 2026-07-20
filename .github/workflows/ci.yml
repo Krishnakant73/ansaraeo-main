@@ -36,5 +36,18 @@ jobs:
 
       # Real CI has the time budget for a full production build; this is the
       # last gate that catches type/route errors tsc alone may miss.
+      #
+      # Placeholder env vars for the build only — Next.js static-prerenders
+      # every route (including "use client" pages under /login, /forgot-password,
+      # etc.) which instantiates the Supabase browser client. Without a URL/key
+      # @supabase/ssr throws mid-prerender. Real values live in Vercel; these
+      # exist so `next build` can compile the HTML shell without live secrets.
+      # They are NEVER used at runtime.
       - name: Production build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_placeholder_ci_build_key_not_real
+          SUPABASE_SERVICE_ROLE_KEY: sb_secret_placeholder_ci_build_key_not_real
+          CRON_SECRET: ci-build-placeholder
+          ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
         run: npm run build

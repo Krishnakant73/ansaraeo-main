@@ -197,7 +197,7 @@ export function StreamPanel({ scanId, domain }: { scanId: string; domain: string
             )}
             {autofill.confidence === "low" && (
               <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                We couldn't confidently identify this brand from the domain alone — you'll be able to correct
+                We couldn&apos;t confidently identify this brand from the domain alone — you&apos;ll be able to correct
                 these details after signup.
               </p>
             )}

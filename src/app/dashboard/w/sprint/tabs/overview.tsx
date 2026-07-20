@@ -27,6 +27,7 @@ export default async function OverviewBody({ sprint }: { sprint: Sprint }) {
     .limit(5);
   const topMissions = (missions as MissionRow[] | null) ?? [];
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const overRun = sprint.stats.daysRemaining != null && sprint.stats.daysRemaining < 0 && sprint.status !== "completed";
 

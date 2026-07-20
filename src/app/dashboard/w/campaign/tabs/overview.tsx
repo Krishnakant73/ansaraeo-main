@@ -27,6 +27,7 @@ export default async function OverviewBody({ campaign }: { campaign: Campaign })
     .limit(5);
   const topMissions = (missions as MissionRow[] | null) ?? [];
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   return (
     <div className="space-y-6">

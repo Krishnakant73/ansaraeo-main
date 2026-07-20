@@ -151,9 +151,9 @@ function RevokedOrExpired({ reason }: { reason: "revoked" | "expired" }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function resolveLabel(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: any,
   kind: string,
   id: string | null,

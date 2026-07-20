@@ -91,7 +91,7 @@ export default async function OverviewBody({ competitor }: { competitor: Competi
   const level = levelFromScore(threat.score);
 
   // DNA is one extra query; run in parallel with the overview data.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const dna = await computeCompetitorDna(supabase as any, {
     id: competitor.id,
     brand_id: competitor.brand_id,

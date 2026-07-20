@@ -97,7 +97,7 @@ export async function getMissionById(id: string): Promise<Mission | null> {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadMissionStats(missionId: string, supabase: any): Promise<MissionStats> {
   const { data: tasks } = await supabase
     .from("tasks")

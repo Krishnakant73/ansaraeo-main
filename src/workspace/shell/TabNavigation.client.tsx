@@ -17,7 +17,7 @@ import type { TabDef } from "../core";
 // component works for /w/[kind]/[slug] and any future variants).
 // ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 type Tab = TabDef<any>;
 
 export default function TabNavigation({

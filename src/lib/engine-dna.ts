@@ -75,7 +75,7 @@ export function averageDna(list: DnaScores[]): DnaScores {
 // (the mean personality of every other active engine for the same
 // brand). Falls back to EMPTY_PERSONALITY DNA if no siblings.
 export async function loadEngineDnaOverlay(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: SupabaseClient<any, "public", any>,
   engineId: string,
   brandId: string,

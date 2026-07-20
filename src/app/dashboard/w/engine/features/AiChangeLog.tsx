@@ -21,7 +21,7 @@ const KIND_TONE: Record<EngineChangeEvent["kind"], string> = {
 
 export default async function AiChangeLog({ engine }: { engine: Engine }) {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const events = await detectEngineChanges(supabase as any, engine.id, engine.brand.id);
 
   if (events.length === 0) {

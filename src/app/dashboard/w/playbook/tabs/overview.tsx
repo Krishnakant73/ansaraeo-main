@@ -19,7 +19,7 @@ export default function OverviewBody({ playbook }: { playbook: Playbook }) {
             <p className="mt-2 text-sm leading-relaxed text-ink">
               {playbook.description ?? (
                 <span className="italic text-muted">
-                  No description set — a one-line "when to use this" helps operators pick it.
+                  No description set — a one-line &quot;when to use this&quot; helps operators pick it.
                 </span>
               )}
             </p>
@@ -50,7 +50,7 @@ export default function OverviewBody({ playbook }: { playbook: Playbook }) {
         <InsightCard
           variant="warning"
           title="No steps defined"
-          description="A playbook without steps can't do anything. Add steps in the Steps tab."
+              description="A playbook without steps can&apos;t do anything. Add steps in the Steps tab."
         />
       )}
       {!playbook.stats.hasVerifyStep && playbook.stats.stepCount > 0 && (

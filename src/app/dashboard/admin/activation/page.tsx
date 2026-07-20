@@ -49,6 +49,7 @@ export default async function ActivationAdminPage() {
 
   // Aggregate counts per event within the last 30 days. RLS is bypassed
   // by design — this page is internal-only.
+  // eslint-disable-next-line react-hooks/purity
   const since = new Date(Date.now() - 30 * 24 * 60 * 60_000).toISOString();
   const counts: Record<string, number> = {};
   for (const step of FUNNEL) {

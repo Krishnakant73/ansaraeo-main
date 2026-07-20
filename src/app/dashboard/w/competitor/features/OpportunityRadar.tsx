@@ -32,6 +32,7 @@ export default async function OpportunityRadar({
   competitor: Competitor;
 }) {
   const supabase = await createClient();
+  // eslint-disable-next-line react-hooks/purity
   const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { data } = await supabase
     .from("opportunity_recommendations")

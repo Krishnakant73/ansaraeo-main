@@ -36,6 +36,7 @@ export default async function OverviewBody({ mission }: { mission: Mission }) {
   const next = active[0] ?? null;
   const verify = rows.find((t) => t.type === "verify");
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const overdue = mission.due_date && new Date(mission.due_date).getTime() < now && mission.status !== "completed";
 

@@ -44,7 +44,7 @@ describe("slugify", () => {
   it("handles null-ish input safely", () => {
     // slugify(input) uses `input ?? ""` so undefined shouldn't throw.
     // Cast to any because the signature is (string) but we test defensive behavior.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     expect(slugify(undefined as unknown as string)).toBe("brand");
   });
 });

@@ -75,7 +75,7 @@ export async function getPromptById(id: string): Promise<Prompt | null> {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadPromptStats(promptId: string, supabase: any): Promise<PromptStats> {
   const { data: runs } = await supabase
     .from("visibility_runs")

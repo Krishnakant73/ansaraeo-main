@@ -77,7 +77,7 @@ type MentionRow = {
   competitor_mentions: { name: string; mentioned: boolean; position: number | null }[] | null;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadCompetitorStats(brandId: string, name: string, supabase: any): Promise<CompetitorStats> {
   const { data: prompts } = await supabase
     .from("prompts")

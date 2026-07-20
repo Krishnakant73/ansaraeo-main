@@ -64,6 +64,7 @@ export default async function WorkflowAnalyticsPage({
           10,
       ) / 10
     : null;
+  // eslint-disable-next-line react-hooks/purity
   const since = new Date(Date.now() - 30 * DAY).toISOString();
   const throughput = completed.filter((t) => t.completed_at >= since).length;
 

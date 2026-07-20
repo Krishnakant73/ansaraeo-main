@@ -92,7 +92,7 @@ export default function InsightHero() {
           className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted md:text-lg"
         >
           60 seconds. No signup. We run real queries against ChatGPT, Perplexity, and Gemini and
-          show you where you're mentioned — and where your competitors are winning instead.
+          show you where you&apos;re mentioned — and where your competitors are winning instead.
         </motion.p>
 
         <motion.form
@@ -101,7 +101,7 @@ export default function InsightHero() {
           className="mx-auto mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
         >
           <label htmlFor="analyze-domain" className="sr-only">
-            Your brand's website
+            Your brand&apos;s website
           </label>
           <div className="relative flex-1">
             <input

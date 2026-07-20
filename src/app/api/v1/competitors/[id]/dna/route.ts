@@ -24,7 +24,7 @@ export async function GET(
     .maybeSingle();
   if (!comp) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const dna = await computeCompetitorDna(supabase as any, comp as {
     id: string;
     brand_id: string;

@@ -92,13 +92,13 @@ function objectFromPath(pathname: string): { kind: string; label: string; key: s
   // Phase 2: /dashboard/b/<slug>[/<module>...]
   if (seg[1] === "b" && seg[2]) {
     const slug = seg[2];
-    const module = seg[3];
-    if (!module) return { kind: "Mission Control", label: slug, key: `mc:${slug}` };
-    const label = module.replace(/-/g, " ");
+    const section = seg[3];
+    if (!section) return { kind: "Mission Control", label: slug, key: `mc:${slug}` };
+    const label = section.replace(/-/g, " ");
     return {
       kind: label.charAt(0).toUpperCase() + label.slice(1),
       label: `${slug} · ${label}`,
-      key: `${slug}:${module}`,
+      key: `${slug}:${section}`,
     };
   }
 
@@ -106,13 +106,13 @@ function objectFromPath(pathname: string): { kind: string; label: string; key: s
 
   // Legacy /dashboard/<module>[/<id>] — kept working for the 33 pages not
   // yet migrated under /b/[slug].
-  const module = seg[1] ?? "brand";
+  const section = seg[1] ?? "brand";
   const id = seg[2] ?? "";
-  const label = module.replace(/-/g, " ");
+  const label = section.replace(/-/g, " ");
   return {
     kind: label.charAt(0).toUpperCase() + label.slice(1),
     label: id ? `${label} · ${id.slice(0, 8)}` : label,
-    key: `${module}:${id || "root"}`,
+    key: `${section}:${id || "root"}`,
   };
 }
 
@@ -492,7 +492,7 @@ export default function CopilotDock() {
                 </button>
               </div>
               <p className="mt-1.5 text-[10px] text-muted">
-                Answers grounded in your brand's real data. Copilot never invents citations.
+                Answers grounded in your brand&apos;s real data. Copilot never invents citations.
               </p>
             </div>
           </>

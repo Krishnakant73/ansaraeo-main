@@ -38,7 +38,7 @@ export default function QuickActionsBar({
       for (const a of actions) {
         if (a.keyboard) {
           if (seen.has(a.keyboard)) {
-            // eslint-disable-next-line no-console
+             
             console.warn(`[workspace] duplicate quick action key "${a.keyboard}"`);
           }
           seen.add(a.keyboard);
