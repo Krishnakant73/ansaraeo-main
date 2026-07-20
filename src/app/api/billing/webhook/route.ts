@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
+import { hmacVerify } from "@/lib/platform/signing";
 
 // ============================================================
 // POST /api/billing/webhook
@@ -18,13 +18,11 @@ import { createServiceClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-razorpay-signature");
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
-    .update(rawBody)
-    .digest("hex");
-
-  if (signature !== expectedSignature) {
+  // Constant-time HMAC verification via the shared signing helper.
+  // Rejects missing signatures/secrets outright — no signature = spoofed request.
+  if (!signature || !secret || !hmacVerify(secret, rawBody, signature)) {
     console.error("Razorpay webhook: signature mismatch — possible spoofed request");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
