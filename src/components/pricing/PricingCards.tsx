@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import posthog from "posthog-js";
 
 type Audience = "brand" | "agency";
 type Cycle = "monthly" | "yearly";
@@ -99,7 +100,18 @@ export default function PricingCards() {
                 <span className="text-4xl font-extrabold tracking-tight">{inr(price)}</span>
                 <span className="text-sm text-muted">/mo{yearly && ", billed yearly"}</span>
               </p>
-              <Link href="/signup" className={cn("mt-6 w-full", p.popular ? "btn-primary" : "btn-secondary")}>
+              <Link
+                href="/signup"
+                className={cn("mt-6 w-full", p.popular ? "btn-primary" : "btn-secondary")}
+                onClick={() =>
+                  posthog.capture("plan_cta_clicked", {
+                    plan_name: p.name,
+                    audience,
+                    billing_cycle: cycle,
+                    price_inr: Math.round(yearly ? (p.monthly * 10) / 12 : p.monthly),
+                  })
+                }
+              >
                 Start Free
               </Link>
               <ul className="mt-8 space-y-3">

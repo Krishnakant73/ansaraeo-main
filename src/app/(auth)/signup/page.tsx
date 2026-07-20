@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Brandmark } from "@/components/shared/Brandmark";
+import posthog from "posthog-js";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -44,6 +45,10 @@ export default function SignupPage() {
       setError(error.message);
       return;
     }
+    posthog.capture("user_signed_up", {
+      method: "email",
+      company_name: companyName,
+    });
     router.push("/signup/check-email");
   }
 
@@ -61,6 +66,8 @@ export default function SignupPage() {
     if (error) {
       setError(error.message);
       setGoogleLoading(false);
+    } else {
+      posthog.capture("user_signed_up", { method: "google" });
     }
   }
 

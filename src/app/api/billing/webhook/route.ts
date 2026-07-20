@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // ============================================================
 // POST /api/billing/webhook
@@ -32,6 +33,8 @@ export async function POST(request: NextRequest) {
   const event = JSON.parse(rawBody);
   const supabase = createServiceClient();
 
+  const posthog = getPostHogClient();
+
   if (event.event === "payment.captured") {
     const payment = event.payload.payment.entity;
     const orderId = payment.order_id as string;
@@ -55,6 +58,18 @@ export async function POST(request: NextRequest) {
         .from("organizations")
         .update({ plan: paymentRow.plan, billing_provider: "razorpay", billing_customer_id: payment.id })
         .eq("id", paymentRow.org_id);
+
+      posthog.capture({
+        distinctId: paymentRow.org_id,
+        event: "payment_completed",
+        properties: {
+          plan: paymentRow.plan,
+          org_id: paymentRow.org_id,
+          razorpay_order_id: orderId,
+          razorpay_payment_id: payment.id,
+          amount_inr: payment.amount / 100,
+        },
+      });
     }
   }
 
@@ -64,7 +79,19 @@ export async function POST(request: NextRequest) {
       .from("payments")
       .update({ status: "failed" })
       .eq("razorpay_order_id", payment.order_id);
+
+    posthog.capture({
+      distinctId: payment.order_id,
+      event: "payment_failed",
+      properties: {
+        razorpay_order_id: payment.order_id,
+        error_code: payment.error_code,
+        error_description: payment.error_description,
+      },
+    });
   }
+
+  await posthog.shutdown();
 
   // Always return 200 quickly — Razorpay retries on non-2xx responses.
   return NextResponse.json({ received: true });

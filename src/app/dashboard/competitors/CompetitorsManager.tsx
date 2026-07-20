@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, Check } from "lucide-react";
+import posthog from "posthog-js";
 import {
   Sheet,
   SheetTrigger,
@@ -31,6 +32,7 @@ export default function CompetitorsManager({
 
   async function discover() {
     setDiscovering(true);
+    posthog.capture("competitor_auto_discover_clicked", { brand_id: brandId });
     const res = await fetch("/api/competitors/discover", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,6 +48,9 @@ export default function CompetitorsManager({
   }
 
   async function respondTo(competitorId: string, action: "confirm" | "reject") {
+    if (action === "confirm") {
+      posthog.capture("competitor_confirmed", { competitor_id: competitorId, brand_id: brandId });
+    }
     await fetch(`/api/competitors/${action}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -63,6 +68,7 @@ export default function CompetitorsManager({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ brandId, name: newName }),
     });
+    posthog.capture("competitor_added", { brand_id: brandId });
     setAdding(false);
     setNewName("");
     router.refresh();

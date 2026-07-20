@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
+import posthog from "posthog-js";
 
 // ============================================================
 // InsightHero — replaces the classic marketing hero.
@@ -46,12 +47,16 @@ export default function InsightHero() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain: domain.trim() }),
       });
-      const data = (await res.json()) as { scanId?: string; error?: string };
+      const data = (await res.json()) as { scanId?: string; error?: string; cached?: boolean };
       if (!res.ok || !data.scanId) {
         setError(data.error ?? "Something went wrong. Try again.");
         setLoading(false);
         return;
       }
+      posthog.capture("scan_submitted", {
+        domain: domain.trim(),
+        cached: data.cached ?? false,
+      });
       router.push(`/analyze/${data.scanId}`);
     } catch {
       setError("Network error. Please try again.");

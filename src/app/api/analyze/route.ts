@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { canonicalizeDomain } from "@/lib/scan-classifier";
 import { hashIp, logActivationEvent } from "@/lib/activation-events";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // ============================================================
 // POST /api/analyze  (PUBLIC — no auth)
@@ -95,6 +96,17 @@ export async function POST(request: NextRequest) {
     ipHash,
     payload: { scanId: created.id, domain: canonical },
   });
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: ipHash ?? "anonymous",
+    event: "scan_started",
+    properties: {
+      scan_id: created.id,
+      domain: canonical,
+    },
+  });
+  await posthog.shutdown();
 
   return NextResponse.json({ scanId: created.id, cached: false });
 }

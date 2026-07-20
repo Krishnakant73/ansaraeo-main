@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { optimizeContent } from "@/lib/content-optimizer";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -50,6 +51,19 @@ export async function POST(req: Request) {
       brandName: brand.name,
       industry: brand.industry,
     });
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "content_optimized",
+      properties: {
+        brand_id: brandId,
+        has_url: !!url,
+        has_text: !!text,
+      },
+    });
+    await posthog.shutdown();
+
     return NextResponse.json({ result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

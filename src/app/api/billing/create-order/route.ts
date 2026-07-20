@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getRazorpay, PLAN_PRICING } from "@/lib/razorpay";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // ============================================================
 // POST /api/billing/create-order
@@ -54,6 +55,20 @@ export async function POST(request: NextRequest) {
     amount_inr: amountInr,
     status: "created",
   });
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "checkout_initiated",
+    properties: {
+      plan,
+      billing_cycle: cycle,
+      amount_inr: amountInr,
+      org_id: membership.org_id,
+      razorpay_order_id: order.id,
+    },
+  });
+  await posthog.shutdown();
 
   return NextResponse.json({
     orderId: order.id,

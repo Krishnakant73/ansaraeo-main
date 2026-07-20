@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateContentDraft } from "@/lib/content-engine";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { parseJsonBody, contentGenerateSchema } from "@/lib/validate";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // POST /api/content/generate — Body: { promptId }
 // Generates a draft aimed at a specific tracked prompt (typically one
@@ -63,6 +64,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: user.id,
+      event: "content_generated",
+      properties: {
+        brand_id: prompt.brand_id,
+        prompt_id: promptId,
+        target_engine: targetEngine ?? null,
+        content_item_id: contentItem.id,
+      },
+    });
+    await posthog.shutdown();
 
     return NextResponse.json({ success: true, contentItem });
   } catch (err) {

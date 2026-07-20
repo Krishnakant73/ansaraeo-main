@@ -55,3 +55,4 @@ supabase/.branches/
 .claude/skills/gstack
 
 .vercel
+.env.local

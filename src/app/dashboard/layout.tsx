@@ -65,6 +65,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       brands={allBrands}
       selectedBrandId={brand?.id ?? null}
       selectedBrandSlug={brand?.slug ?? null}
+      userId={user.id}
       email={user.email ?? null}
       hiddenHrefs={hiddenHrefs}
     >

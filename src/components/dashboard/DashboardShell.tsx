@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import posthog from "posthog-js";
 import type { Brand } from "@/lib/selected-brand";
 import Topbar from "./Topbar";
 import Breadcrumbs from "./Breadcrumbs";
@@ -44,6 +45,7 @@ export default function DashboardShell({
   brands,
   selectedBrandId,
   selectedBrandSlug,
+  userId,
   email,
   hiddenHrefs,
   children,
@@ -51,11 +53,18 @@ export default function DashboardShell({
   brands: Brand[];
   selectedBrandId: string | null;
   selectedBrandSlug: string | null;
+  userId: string | null;
   email: string | null;
   hiddenHrefs?: string[];
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (userId) {
+      posthog.identify(userId, { email: email ?? undefined });
+    }
+  }, [userId, email]);
   const hasBrand = !!selectedBrandId;
   const lockedFeatures = hiddenHrefs ?? [];
 

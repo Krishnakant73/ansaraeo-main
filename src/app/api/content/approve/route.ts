@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // ============================================================
 // POST /api/content/approve — Body: { contentId, contentMarkdown, eeatChecklist }
@@ -53,5 +54,17 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: user.id,
+    event: "content_approved",
+    properties: {
+      content_item_id: contentId,
+      brand_id: data.brand_id,
+    },
+  });
+  await posthog.shutdown();
+
   return NextResponse.json({ success: true, contentItem: data });
 }

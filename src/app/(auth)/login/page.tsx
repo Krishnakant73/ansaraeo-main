@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Brandmark } from "@/components/shared/Brandmark";
+import posthog from "posthog-js";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     setLoading(false);
     if (error) {
@@ -32,6 +33,10 @@ export default function LoginPage() {
           : error.message
       );
       return;
+    }
+    if (data.user) {
+      posthog.identify(data.user.id, { email: data.user.email });
+      posthog.capture("user_logged_in", { method: "email" });
     }
     router.push("/dashboard");
     router.refresh();
@@ -47,6 +52,8 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
       setGoogleLoading(false);
+    } else {
+      posthog.capture("user_logged_in", { method: "google" });
     }
   }
 
