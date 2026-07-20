@@ -1,5 +1,6 @@
 import type { InternalLLMProvider } from "./types";
 import { OpenAIProvider } from "./openai-provider";
+import { RouterBackedProvider } from "./router-provider";
 import { createPlaceholderProvider } from "./providers/placeholder";
 
 export interface ProviderEntry {
@@ -25,6 +26,11 @@ export interface ProviderEntry {
 // its key from env. No application code that calls getInternalLLM() changes.
 export const PROVIDER_REGISTRY: Record<string, ProviderEntry> = {
   openai: { implemented: true, create: () => new OpenAIProvider() },
+  // Constitution ModelRouter path. Set INTERNAL_LLM_PROVIDER=openrouter to
+  // route every internal LLM call (16+ callers) through OpenRouter with
+  // capability-based routing, prompt-hash cache, and cost tracking. Same
+  // InternalLLMProvider contract — zero caller changes.
+  openrouter: { implemented: true, create: () => new RouterBackedProvider() },
   claude: { implemented: false, create: () => createPlaceholderProvider("claude") },
   gemini: { implemented: false, create: () => createPlaceholderProvider("gemini") },
   grok: { implemented: false, create: () => createPlaceholderProvider("grok") },
