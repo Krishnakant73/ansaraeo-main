@@ -11,7 +11,7 @@ import type { ObjectKind, WorkspaceDescriptor } from "./types";
 // isolated request in dev.
 // ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const registry = new Map<ObjectKind, WorkspaceDescriptor<any>>();
 
 export function register<T>(descriptor: WorkspaceDescriptor<T>): void {

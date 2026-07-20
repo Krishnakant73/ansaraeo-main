@@ -145,7 +145,7 @@ export async function getEngineByName(name: string): Promise<Engine | null> {
 // row (populated by the nightly cron); when absent (pre-migration-029 or
 // before the first cron run), return EMPTY_PERSONALITY so the workspace
 // falls back to empty-state coaching rather than a crash.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadPersonality(engineId: string, brandId: string, supabase: any): Promise<EnginePersonality> {
   try {
     const { data } = await supabase
@@ -172,7 +172,7 @@ async function loadPersonality(engineId: string, brandId: string, supabase: any)
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadChangeEvents30d(engineId: string, brandId: string, supabase: any): Promise<number> {
   const thirty = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
   try {
@@ -188,7 +188,7 @@ async function loadChangeEvents30d(engineId: string, brandId: string, supabase: 
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadSnapshotSeries(engineId: string, brandId: string, supabase: any): Promise<EngineSnapshotPoint[]> {
   const thirty = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
   try {
@@ -205,7 +205,7 @@ async function loadSnapshotSeries(engineId: string, brandId: string, supabase: a
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadEngineStats(engineId: string, brandId: string, supabase: any): Promise<EngineStats> {
   // All runs for this engine × brand: fetch prompt ids first, then runs.
   const { data: prompts } = await supabase

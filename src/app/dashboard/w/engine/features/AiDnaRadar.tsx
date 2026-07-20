@@ -28,7 +28,7 @@ const RADAR_AXES = [
 
 export default async function AiDnaRadar({ engine }: { engine: Engine }) {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { them, you } = await loadEngineDnaOverlay(supabase as any, engine.id, engine.brand.id);
   const anyData = Object.values(them).some((v) => v > 0);
   if (!anyData) {

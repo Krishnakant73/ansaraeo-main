@@ -28,7 +28,7 @@ export async function GET(
   const { brand } = await getSelectedBrand();
   if (!brand) return NextResponse.json({ error: "No brand context" }, { status: 400 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const events = await detectEngineChanges(supabase as any, (engine as { id: string }).id, brand.id);
   return NextResponse.json({ events });
 }

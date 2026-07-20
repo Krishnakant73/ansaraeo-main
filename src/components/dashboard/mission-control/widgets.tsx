@@ -234,7 +234,7 @@ export function TodaysMission({
       title={
         <span className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-accent" />
-          Today's mission
+          Today&apos;s mission
         </span>
       }
       description="The single most valuable thing you could do right now"
@@ -267,7 +267,7 @@ export function TodaysMission({
           <button
             type="button"
             className="btn-ghost"
-            data-copilot-seed={`Why is "${opportunity.title}" the top opportunity right now?`}
+            data-copilot-seed={`Why is &quot;${opportunity.title}&quot; the top opportunity right now?`}
             data-copilot-open
           >
             <Bot className="h-3.5 w-3.5" /> Ask why this?
@@ -382,7 +382,7 @@ export function CompetitorRadar({ brandSlug, rows }: { brandSlug: string; rows: 
               <li key={r.competitor} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink">{r.competitor}</p>
-                  {r.onPrompt && <p className="truncate text-xs text-muted">on "{r.onPrompt}"</p>}
+                  {r.onPrompt && <p className="truncate text-xs text-muted">on &quot;{r.onPrompt}&quot;</p>}
                   {r.reason && <p className="mt-0.5 truncate text-xs text-muted">{r.reason}</p>}
                 </div>
                 <span

@@ -69,7 +69,7 @@ const YEAR_REGEX = /\b(20\d{2})\b/;
 // Public entry point. Returns EMPTY_PERSONALITY when no runs; UI
 // renders EmptyStateCoach in that case. Never throws.
 export async function computeEnginePersonality(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: SupabaseClient<any, "public", any>,
   engineId: string,
   brandId: string,

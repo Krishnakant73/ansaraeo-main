@@ -9,12 +9,20 @@
 // decorative, and it's a direct implementation of the Google-safe
 // content strategy from 07-agentic-automation-integrations.md, Section 5.
 //
-// The internal LLM call is routed through the provider abstraction
-// (src/lib/llm) — OpenAI by default. Same model, same JSON-mode contract,
-// same [ADD …] honesty behavior. Swapping providers is a config change.
+// LLM transport migration (2026-07-20): This file was the FIRST caller
+// rewired through the constitution's ModelRouter. It now routes through
+// OpenRouter with the DEFAULT capability instead of hitting the OpenAI
+// provider directly. The system prompt still lives here (rather than
+// /prompts/*.md) because buildShapeRail() computes it dynamically from
+// engine personality — a static template can't express that logic. Same
+// JSON contract, same [ADD …] honesty behavior; the shape-rail
+// deterministic path is still fully unit-tested in content-engine.test.ts.
+// Falls back to getInternalLLM() when OPENROUTER_API_KEY is unset so this
+// change is safe to deploy before the router is fully provisioned.
 // ============================================================
 
 import { getInternalLLM } from "./llm";
+import { getModelRouter } from "@/services/model-router";
 import type { EnginePersonality } from "./engine-personality";
 
 // ============================================================
@@ -61,8 +69,33 @@ Respond ONLY as JSON: {"title": string, "contentMarkdown": string}. Keep it to r
 
   const prompt = `Write a draft aimed at this exact question a customer might ask an AI assistant: "${params.promptText}"`;
 
-  const raw = await getInternalLLM().generate({ system, prompt, json: true });
+  const raw = await callLlm({ system, prompt });
   return JSON.parse(raw) as { title: string; contentMarkdown: string };
+}
+
+// Transport indirection so the migration is one place, not scattered inside
+// every generation function. Prefers ModelRouter → OpenRouter; falls back to
+// the legacy internal LLM provider when OPENROUTER_API_KEY is unset. Both
+// paths honor the same JSON-mode contract.
+async function callLlm(params: { system: string; prompt: string }): Promise<string> {
+  if (process.env.OPENROUTER_API_KEY) {
+    const response = await getModelRouter().complete({
+      capability: "DEFAULT",
+      system: params.system,
+      prompt: params.prompt,
+      json: true,
+      caller: "content-engine",
+      // Content drafts are per-prompt unique; 5-minute cache dedupes
+      // accidental double-clicks without staling useful variation.
+      cacheTtlSeconds: 5 * 60,
+    });
+    return response.content;
+  }
+  return getInternalLLM().generate({
+    system: params.system,
+    prompt: params.prompt,
+    json: true,
+  });
 }
 
 // buildShapeRail — deterministic mapping from engine personality to a
@@ -146,9 +179,9 @@ export function buildShapeRail(target: EngineShapeRail): string {
 // Loader helper: fetches a cached engine_personalities row (with a live
 // fallback via the personality endpoint pattern) for a given engine
 // name + brand. Kept here so route handlers stay thin.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function loadShapeRail(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: any,
   engineName: string,
   brandId: string,

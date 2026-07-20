@@ -14,7 +14,7 @@ import type { Competitor } from "@/lib/competitor-workspace";
 
 export default async function StrengthsBody({ competitor }: { competitor: Competitor }) {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const traits = await deriveCompetitorTraits(supabase as any, {
     id: competitor.id,
     brand_id: competitor.brand_id,

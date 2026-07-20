@@ -118,7 +118,7 @@ export function ReportView({ scanId, report }: { scanId: string; report: ScanRep
         <section className="mt-10">
           <h2 className="text-lg font-semibold tracking-tight">Your biggest opportunities</h2>
           <p className="mt-1 text-sm text-muted">
-            Prompts where competitors show up and you don't — the highest-leverage places to publish first.
+            Prompts where competitors show up and you don&apos;t — the highest-leverage places to publish first.
           </p>
           <ul className="mt-4 space-y-3">
             {report.opportunities.map((op, i) => (
@@ -129,7 +129,7 @@ export function ReportView({ scanId, report }: { scanId: string; report: ScanRep
                     <p className="text-sm font-semibold text-ink">&ldquo;{op.prompt}&rdquo;</p>
                     <p className="mt-1 text-xs text-muted">
                       On {ENGINE_LABEL[op.engine] ?? op.engine}, {op.competitors_present.slice(0, 3).join(", ")}
-                      {op.competitors_present.length > 3 ? " and others" : ""} appear. You don't.
+                      {op.competitors_present.length > 3 ? " and others" : ""} appear. You don&apos;t.
                     </p>
                   </div>
                 </div>

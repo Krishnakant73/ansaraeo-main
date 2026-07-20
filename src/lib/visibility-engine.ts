@@ -94,6 +94,34 @@ async function callGrok(promptText: string): Promise<EngineResult> {
   return { content: msg.content as string, citedUrls };
 }
 
+// OpenRouter — meta-provider (openrouter.ai) that routes a single API to
+// many upstream LLMs. OpenAI-compatible chat completions endpoint. Skip
+// honestly when OPENROUTER_API_KEY is unset, same pattern as callGrok.
+// The model slug ("openai/gpt-4o-mini" default) is any provider/model pair
+// OpenRouter supports — override via OPENROUTER_MODEL env var.
+async function callOpenRouter(promptText: string): Promise<EngineResult> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return { content: "", citedUrls: [], skipped: true, skipReason: "OPENROUTER_API_KEY not configured" };
+  }
+  const model = process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      // OpenRouter uses these to attribute traffic in their dashboard; both
+      // are optional but recommended by their docs.
+      "HTTP-Referer": "https://ansaraeo.com",
+      "X-Title": "AnsarAEO",
+    },
+    body: JSON.stringify({ model, messages: [{ role: "user", content: promptText }] }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter error: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return { content: data.choices?.[0]?.message?.content as string, citedUrls: [] };
+}
+
 // Microsoft Copilot has NO official public chat-completions API, so we do
 // not pretend to call one. If the operator has stood up an OpenAI-compatible
 // proxy (e.g. an internal gateway) and pointed COPILOT_API_URL + COPILOT_API_KEY
@@ -126,6 +154,7 @@ const ENGINE_CALLERS: Record<string, (promptText: string) => Promise<EngineResul
   google_ai_overview: callGoogleAIOverview,
   grok: callGrok,
   copilot: callCopilot,
+  openrouter: callOpenRouter,
 };
 
 type CompetitorMention = { name: string; mentioned: boolean; position: number | null };

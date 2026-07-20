@@ -86,8 +86,10 @@ export default function ShareLinkModal({ eventNames }: { eventNames: string[] })
 
   if (!open || !detail) return null;
 
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
   const expiryDays = minted
-    ? Math.max(0, Math.round((new Date(minted.expires_at).getTime() - Date.now()) / 86_400_000))
+    ? Math.max(0, Math.round((new Date(minted.expires_at).getTime() - now) / 86_400_000))
     : 7;
 
   return (

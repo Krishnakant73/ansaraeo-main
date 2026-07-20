@@ -94,7 +94,7 @@ export default async function MissionControlHome({
 
   const engines = enginesRes.data ?? [];
   const firings = firingsRes.data ?? [];
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const _competitorsCount = competitorsCountRes.count ?? 0;
   const lastScanAt = lastScanRes.data?.[0]?.run_at ?? null;
 
@@ -116,6 +116,7 @@ export default async function MissionControlHome({
   }[];
 
   // ---------- KPI computations ----------
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const day = 86_400_000;
   const cur7 = allRuns.filter((r) => now - new Date(r.run_at).getTime() < 7 * day);

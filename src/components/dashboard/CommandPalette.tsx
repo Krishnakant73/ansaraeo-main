@@ -395,7 +395,7 @@ export default function CommandPalette({
         <ul id="palette-list" ref={listRef} role="listbox" className="max-h-[420px] overflow-y-auto p-2">
           {flat.length === 0 && (
             <li className="px-3 py-8 text-center text-sm text-muted">
-              No commands match "{query}". Try a different word, or press{" "}
+              No commands match &quot;{query}&quot;. Try a different word, or press{" "}
               <kbd className="rounded border border-line bg-surface px-1 text-[10px]">Esc</kbd> to close.
             </li>
           )}

@@ -30,6 +30,7 @@ export default async function BurndownBody({ sprint }: { sprint: Sprint }) {
 
   // Fix the window: prefer sprint start/end; otherwise last 14 days ending now.
   const day = 86_400_000;
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const end = sprint.end_date ? new Date(sprint.end_date).getTime() : now;
   const start = sprint.start_date

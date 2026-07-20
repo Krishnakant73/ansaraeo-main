@@ -26,6 +26,7 @@ export default async function SharedReportPage({
     .eq("token", token)
     .single();
   if (!row || row.revoked) notFound();
+  // eslint-disable-next-line react-hooks/purity
   if (new Date(row.expires_at).getTime() < Date.now()) notFound();
 
   const [{ data: brand }, { data: prompts }] = await Promise.all([

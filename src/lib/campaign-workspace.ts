@@ -67,7 +67,7 @@ export async function getCampaignById(id: string): Promise<Campaign | null> {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadCampaignStats(campaignId: string, supabase: any): Promise<CampaignStats> {
   const { data: missions } = await supabase
     .from("missions")

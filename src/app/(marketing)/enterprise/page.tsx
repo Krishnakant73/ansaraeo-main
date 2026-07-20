@@ -28,7 +28,7 @@ export default function EnterprisePage() {
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-muted">
             You have 5+ brands to track, need SSO, and want your own analyst reviewing the report every week.
-            We'll run a live scan on your top brand before the intro call — the report is the deck.
+            We&apos;ll run a live scan on your top brand before the intro call — the report is the deck.
           </p>
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -46,7 +46,7 @@ export default function EnterprisePage() {
           <div className="mt-14 card p-6">
             <h2 className="text-xl font-semibold tracking-tight">Talk to us</h2>
             <p className="mt-1 text-sm text-muted">
-              Reply directly to the confirmation email with your top brand's domain — we'll run the scan and send
+              Reply directly to the confirmation email with your top brand&apos;s domain — we&apos;ll run the scan and send
               you the report within 24 hours.
             </p>
             <form action="/api/contact" method="POST" className="mt-6 space-y-4">

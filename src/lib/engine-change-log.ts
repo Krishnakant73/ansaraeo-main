@@ -41,7 +41,7 @@ type EventRow = {
 
 // Public entry point.
 export async function detectEngineChanges(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: SupabaseClient<any, "public", any>,
   engineId: string,
   brandId: string,

@@ -3,6 +3,8 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import SmoothScroll from "@/components/layout/SmoothScroll";
 import CookieConsent from "@/components/shared/CookieConsent";
+import { AppProviders } from "@/app/providers";
+import { GoogleTagsHead, GtmNoscript } from "@/components/analytics/GoogleTags";
 import { cn } from "@/lib/utils";
 
 const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
@@ -75,13 +77,19 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={cn("font-mono", interHeading.variable, geistMono.variable)}>
+      <head>
+        <GoogleTagsHead />
+      </head>
       <body className="bg-white font-sans text-ink antialiased">
+        <GtmNoscript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <SmoothScroll>{children}</SmoothScroll>
-        <CookieConsent />
+        <AppProviders>
+          <SmoothScroll>{children}</SmoothScroll>
+          <CookieConsent />
+        </AppProviders>
       </body>
     </html>
   );

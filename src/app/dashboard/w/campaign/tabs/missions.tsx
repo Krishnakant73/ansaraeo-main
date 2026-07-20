@@ -55,6 +55,7 @@ export default async function MissionsBody({ campaign }: { campaign: Campaign })
     doneCount: taskCountByMission.get(m.id)?.done ?? 0,
   }));
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   return (

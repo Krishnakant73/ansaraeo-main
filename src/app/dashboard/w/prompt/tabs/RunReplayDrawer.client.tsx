@@ -346,7 +346,7 @@ function VerificationSummary({
         LLM said <span className="font-semibold">{llm}</span>, deterministic text match said{" "}
         <span className="font-semibold">{det}</span>.{" "}
         {agreed ? (
-          <>Both agreed → the run's brand_mentioned is <span className="font-semibold">{String(finalMentioned)}</span>.</>
+          <>Both agreed → the run&apos;s brand_mentioned is <span className="font-semibold">{String(finalMentioned)}</span>.</>
         ) : (
           <>
             They disagreed for <span className="font-semibold">{brandName}</span>. Deterministic wins

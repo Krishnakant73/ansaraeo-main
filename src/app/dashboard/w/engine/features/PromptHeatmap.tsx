@@ -41,6 +41,7 @@ export default async function PromptHeatmap({ engine }: { engine: Engine }) {
     );
   }
 
+  // eslint-disable-next-line react-hooks/purity
   const eightWeeksAgo = new Date(Date.now() - WEEKS_BACK * 7 * 86_400_000).toISOString();
   const { data: runs } = await supabase
     .from("visibility_runs")

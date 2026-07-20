@@ -42,7 +42,7 @@ type CitationRow = {
 };
 
 export async function computeCompetitorDna(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: SupabaseClient<any, "public", any>,
   competitor: { id: string; brand_id: string; name: string; domain: string | null },
 ): Promise<{ them: DnaScores; you: DnaScores }> {

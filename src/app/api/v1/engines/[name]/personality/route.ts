@@ -40,7 +40,7 @@ export async function GET(
 
   if (cached) return NextResponse.json({ ...cached, source: "cache" });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const live = await computeEnginePersonality(supabase as any, engineId, brand.id);
   return NextResponse.json({ ...live, source: "live" });
 }

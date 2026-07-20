@@ -36,6 +36,7 @@ export default async function TasksBody({ mission }: { mission: Mission }) {
     .limit(200);
 
   const rows = (tasks as Row[] | null) ?? [];
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const byStatus = new Map<string, Row[]>();
   for (const t of rows) {

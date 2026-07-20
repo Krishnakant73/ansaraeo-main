@@ -72,12 +72,12 @@ export async function getSprintById(id: string): Promise<Sprint | null> {
   return { ...sprint, brand: brand as SprintBrand, stats };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadSprintStats(
   sprintId: string,
   startDate: string | null,
   endDate: string | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: any,
 ): Promise<SprintStats> {
   const { data: missions } = await supabase

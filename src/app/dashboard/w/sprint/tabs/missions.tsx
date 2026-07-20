@@ -53,6 +53,7 @@ export default async function MissionsBody({ sprint }: { sprint: Sprint }) {
     doneCount: taskCounts.get(m.id)?.done ?? 0,
   }));
 
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   return (
     <div className="space-y-4">

@@ -59,7 +59,7 @@ export async function getAlertById(id: string): Promise<Alert | null> {
   return { ...row, brand: brand as AlertBrand, stats };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function loadAlertStats(alertId: string, supabase: any): Promise<AlertStats> {
   const { data: firings } = await supabase
     .from("geo_alert_firings")

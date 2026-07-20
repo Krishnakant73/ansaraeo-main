@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     let target = undefined;
     if (targetEngine) {
       const { loadShapeRail } = await import("@/lib/content-engine");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       target = (await loadShapeRail(supabase as any, targetEngine, prompt.brand_id)) ?? undefined;
     }
 

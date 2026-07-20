@@ -27,44 +27,26 @@ export type EmailPayload = {
   html?: string;
 };
 
+// WhatsApp dry-run helper — email dry-run now lives inside src/lib/email.ts
+// but the WhatsApp mirror below still needs its own gate. Same semantics as
+// before: explicit EMAIL_DRY_RUN=true, OR implicit when SMTP is unconfigured
+// (a dev environment that couldn't have sent email anyway shouldn't spam a
+// live WhatsApp template either).
 function dryRun(): boolean {
   return process.env.EMAIL_DRY_RUN === "true" || !process.env.ZOHO_SMTP_USER;
 }
 
-async function getTransporter() {
-  // Lazy import so `next build` doesn't require nodemailer when this
-  // module is only imported for its template functions.
-  const nodemailer = (await import("nodemailer")).default;
-  return nodemailer.createTransport({
-    host: process.env.ZOHO_SMTP_HOST || "smtp.zoho.com",
-    port: 465,
-    secure: true,
-    auth: { user: process.env.ZOHO_SMTP_USER, pass: process.env.ZOHO_SMTP_PASS },
-  });
-}
-
 // One place to send. Every template funnels through this so dry-run
 // and error handling stay consistent.
+//
+// Delegates to the unified src/lib/email.ts wrapper (Batch C, 2026-07-20).
+// Provider stays "zoho" here so behavior is byte-identical to the pre-Resend
+// implementation. Flip individual callers to `provider: "resend"` once we've
+// validated Resend deliverability on the ansaraeo.com domain.
 export async function sendEmail(payload: EmailPayload): Promise<{ ok: boolean; error?: string }> {
-  if (dryRun()) {
-    console.info(
-      `[email:DRY_RUN] to=${payload.to} subj="${payload.subject}"\n${payload.text}`,
-    );
-    return { ok: true };
-  }
-  try {
-    const transporter = await getTransporter();
-    await transporter.sendMail({
-      from: `"AnsarAEO" <${process.env.ZOHO_SMTP_USER}>`,
-      to: payload.to,
-      subject: payload.subject,
-      text: payload.text,
-      html: payload.html,
-    });
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: (err as Error).message };
-  }
+  const { sendEmail: unifiedSend } = await import("@/lib/email");
+  const result = await unifiedSend({ ...payload, provider: "zoho" });
+  return { ok: result.ok, error: result.error };
 }
 
 // Optional WhatsApp mirror. Silent no-op when the org has no phone or
