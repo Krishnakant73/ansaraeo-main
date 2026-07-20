@@ -88,6 +88,6 @@
     "postcss": "^8.5.1",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   }
 }
